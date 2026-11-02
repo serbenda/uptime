@@ -33,6 +33,7 @@ The site is a NOC (network operations centre): each category is a rack and each 
 | Part | What it does |
 |---|---|
 | **Console** | A terminal session running `uptime` and `systemctl --failed`. It answers with `[  OK  ] All systems operational.` or `[FAILED] GitHub and Azure are having problems.` The *load average* is real: the share of services with an outage now, and on average over 7 and 30 days. |
+| **Terminal** | The console is also a real command line, a toy shell answering with the page's data: `status github`, `systemctl --failed`, `ls cloud`, `geoiplookup singapore`, `top`, `journalctl aws`, `neofetch`, `lang es`… Press `/` anywhere to jump to it; Tab completes and ↑ ↓ browse history. Nothing you type leaves your browser. |
 | **Outage map** | A world map made of LEDs, lit wherever something is failing: colour is the worst status, size is how many failures, major outages pulse. Hover to see who's failing; click for a `geoiplookup` with each provider and the component or incident that put it there. |
 | **Open incidents** | A `journalctl` with every active incident, most severe first, expandable to the provider's latest message. |
 | **Racks** | One rack per category. Each server has its LED (blinking when failing), its status, a 90-day graph and an availability display. Click it to pull out a drawer with its diagnostics terminal. |
