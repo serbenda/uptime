@@ -24,6 +24,7 @@ Red Hat, Google Cloud, AWS, Cloudflare y más. Incidencias, mantenimientos y ca�
 
 - [Qué es](#qué-es)
 - [Lo que ves en la web](#lo-que-ves-en-la-web)
+  - [La terminal](#la-terminal)
 - [Proveedores](#proveedores)
 - [Mapa de fallos](#mapa-de-fallos)
 - [Arquitectura](#arquitectura)
@@ -48,7 +49,7 @@ La web es un NOC (centro de operaciones de red): cada categoría es un rack y ca
 | Parte | Para qué sirve |
 |---|---|
 | **Idioma** | Castellano o inglés, según el navegador. Se cambia en la barra de la consola (`LANG= es_ES en_US`) o con `?lang=en`, y se recuerda. |
-| **Consola** | Una sesión de terminal que ejecuta `uptime` y `systemctl --failed`. Responde a la pregunta con `[  OK  ] Todo funciona.` o `[FAILED] GitHub y Azure tienen problemas.` y lista los servicios con fallos. El *load average* es real: la fracción de servicios con caída ahora, de media en 7 días y en 30 días. El favicon y el título de la pestaña también cambian de color. |
+| **Consola** | Una sesión de terminal que ejecuta `uptime` y `systemctl --failed`. Responde a la pregunta con `[  OK  ] Todo funciona.` o `[FAILED] GitHub y Azure tienen problemas.` y lista los servicios con fallos. El *load average* es real: la fracción de servicios con caída ahora, de media en 7 días y en 30 días. El favicon y el título de la pestaña también cambian de color. Debajo hay una línea de órdenes de verdad: ver [La terminal](#la-terminal). |
 | **Mapa de fallos** | Un mapamundi hecho de LED, con un punto encendido en cada lugar donde hay algo fallando: el color es el peor estado, el tamaño cuántos fallos hay y los graves laten. Al pasar por encima se ve quién falla; al pulsar, un `geoiplookup` con cada proveedor y qué componente o incidencia lo ha puesto ahí. Al lado, la lista de lugares y los proveedores con fallos sin ubicación concreta. |
 | **Incidencias abiertas** | Un `journalctl` con todas las incidencias activas, de más a menos graves. Cada línea se despliega con la fase, el último mensaje del proveedor y el enlace. |
 | **Racks** | Un rack por categoría (nube, desarrollo, red y CDN, colaboración, IA). Cada servidor tiene su LED (parpadea si hay fallos), su estado, una gráfica de 90 días y un display con la disponibilidad. |
@@ -60,6 +61,28 @@ La web es un NOC (centro de operaciones de red): cada categoría es un rack y ca
 | **Fuente de alimentación** | El apartado de GitHub Sponsors, como la fuente de un servidor: ventilador, etiqueta de especificaciones con datos reales e interruptor basculante. |
 
 Todo se puede compartir con un enlace: `#p=github` abre directamente el cajón de GitHub.
+
+### La terminal
+
+La consola de arriba acepta órdenes, como una shell de juguete que responde con los datos de la página. Todo ocurre en el navegador: nada de lo que se escribe sale de él. Con `/` desde cualquier parte se salta a la línea de órdenes; Tab completa órdenes, servicios y lugares; ↑ y ↓ recorren el historial; Ctrl+L limpia y Ctrl+C cancela.
+
+| Orden | Qué hace |
+|---|---|
+| `help` | La lista de órdenes |
+| `status <servicio>` | Estado de un servicio al estilo `systemctl status`: fuente, estado, disponibilidad, componentes e incidencias, con un enlace a su servidor en el rack |
+| `systemctl --failed` | Los servicios con fallos |
+| `ls [rack]`, `ls -l` | Los servidores de cada rack con su LED (`ls nube`, `ls cloud`) |
+| `journalctl [servicio]` | Incidencias abiertas |
+| `geoiplookup [lugar]` | Dónde hay fallos; con un lugar, lo marca en el mapa |
+| `top` | Los servicios con peor disponibilidad en 90 días |
+| `ping <servicio>` | Cuándo respondió su página de estado (uptime no hace ping a nadie, y lo dice) |
+| `crontab -l`, `last` | Mantenimientos e incidencias de los últimos 30 días |
+| `grep <texto>` | Busca en servicios, componentes e incidencias |
+| `neofetch` | El NOC en un vistazo, con un rack ASCII que se colorea con el estado |
+| `lang es`, `lang en`, `export LANG=en_US.UTF-8` | Cambia el idioma |
+| `uptime`, `date`, `whoami`, `history`, `man`, `echo`, `clear`, `sponsor` | Lo que esperas |
+
+También hay algún huevo de Pascua para quien pruebe lo de siempre (`sudo`, `rm -rf /`, `exit`, `coffee`). Si una orden no existe, sugiere la más parecida.
 
 ### Escala de estados
 
@@ -247,7 +270,8 @@ uptime/
 ├── css/estilo.css             Estilos: sala, racks, LED, mapa y terminales
 ├── js/
 │   ├── i18n.js                Textos en castellano e inglés
-│   └── app.js                 Consola, mapa, journal, racks, cajones, filtros y avisos
+│   ├── app.js                 Consola, mapa, journal, racks, cajones, filtros y avisos
+│   └── terminal.js            La línea de órdenes de la consola
 ├── data/
 │   ├── proveedores.json       Qué se consulta y con qué formato
 │   ├── mapa.json              Mapamundi como matriz de LED (generado)
