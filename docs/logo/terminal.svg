@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 288" width="880" height="288" role="img" aria-label="An uptime terminal session: uptime, systemctl --failed and geoiplookup singapore">
+<title>uptime terminal</title>
+<style>
+.t { font-family: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 15px; white-space: pre; }
+.x { opacity: 0; animation-duration: 18.0s; animation-iteration-count: infinite; animation-timing-function: steps(1, end); }
+@keyframes parpadeo { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { .x { animation: none !important; opacity: 1 !important; } .c { animation: none !important; } }
+@keyframes k1 { 0%, 1.389% { opacity: 0 } 1.394%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k1 { animation-name: k1; }@keyframes k2 { 0%, 3.333% { opacity: 0 } 3.339%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k2 { animation-name: k2; }@keyframes k3 { 0%, 3.796% { opacity: 0 } 3.802%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k3 { animation-name: k3; }@keyframes k4 { 0%, 4.259% { opacity: 0 } 4.265%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k4 { animation-name: k4; }@keyframes k5 { 0%, 4.722% { opacity: 0 } 4.728%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k5 { animation-name: k5; }@keyframes k6 { 0%, 5.185% { opacity: 0 } 5.191%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k6 { animation-name: k6; }@keyframes k7 { 0%, 5.648% { opacity: 0 } 5.654%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k7 { animation-name: k7; }@keyframes k8 { 0%, 8.611% { opacity: 0 } 8.617%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k8 { animation-name: k8; }@keyframes k9 { 0%, 10.556% { opacity: 0 } 10.561%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k9 { animation-name: k9; }@keyframes k10 { 0%, 12.500% { opacity: 0 } 12.506%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k10 { animation-name: k10; }@keyframes k11 { 0%, 12.840% { opacity: 0 } 12.845%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k11 { animation-name: k11; }@keyframes k12 { 0%, 13.179% { opacity: 0 } 13.185%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k12 { animation-name: k12; }@keyframes k13 { 0%, 13.519% { opacity: 0 } 13.524%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k13 { animation-name: k13; }@keyframes k14 { 0%, 13.858% { opacity: 0 } 13.864%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k14 { animation-name: k14; }@keyframes k15 { 0%, 14.198% { opacity: 0 } 14.203%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k15 { animation-name: k15; }@keyframes k16 { 0%, 14.537% { opacity: 0 } 14.543%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k16 { animation-name: k16; }@keyframes k17 { 0%, 14.877% { opacity: 0 } 14.882%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k17 { animation-name: k17; }@keyframes k18 { 0%, 15.216% { opacity: 0 } 15.222%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k18 { animation-name: k18; }@keyframes k19 { 0%, 15.556% { opacity: 0 } 15.561%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k19 { animation-name: k19; }@keyframes k20 { 0%, 15.895% { opacity: 0 } 15.901%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k20 { animation-name: k20; }@keyframes k21 { 0%, 16.235% { opacity: 0 } 16.240%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k21 { animation-name: k21; }@keyframes k22 { 0%, 16.574% { opacity: 0 } 16.580%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k22 { animation-name: k22; }@keyframes k23 { 0%, 16.914% { opacity: 0 } 16.919%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k23 { animation-name: k23; }@keyframes k24 { 0%, 17.253% { opacity: 0 } 17.259%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k24 { animation-name: k24; }@keyframes k25 { 0%, 17.593% { opacity: 0 } 17.598%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k25 { animation-name: k25; }@keyframes k26 { 0%, 17.932% { opacity: 0 } 17.938%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k26 { animation-name: k26; }@keyframes k27 { 0%, 18.272% { opacity: 0 } 18.277%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k27 { animation-name: k27; }@keyframes k28 { 0%, 21.111% { opacity: 0 } 21.117%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k28 { animation-name: k28; }@keyframes k29 { 0%, 22.778% { opacity: 0 } 22.783%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k29 { animation-name: k29; }@keyframes k30 { 0%, 23.778% { opacity: 0 } 23.783%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k30 { animation-name: k30; }@keyframes k31 { 0%, 26.278% { opacity: 0 } 26.283%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k31 { animation-name: k31; }@keyframes k32 { 0%, 28.222% { opacity: 0 } 28.228%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k32 { animation-name: k32; }@keyframes k33 { 0%, 28.540% { opacity: 0 } 28.545%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k33 { animation-name: k33; }@keyframes k34 { 0%, 28.857% { opacity: 0 } 28.863%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k34 { animation-name: k34; }@keyframes k35 { 0%, 29.175% { opacity: 0 } 29.180%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k35 { animation-name: k35; }@keyframes k36 { 0%, 29.492% { opacity: 0 } 29.498%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k36 { animation-name: k36; }@keyframes k37 { 0%, 29.810% { opacity: 0 } 29.815%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k37 { animation-name: k37; }@keyframes k38 { 0%, 30.127% { opacity: 0 } 30.133%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k38 { animation-name: k38; }@keyframes k39 { 0%, 30.444% { opacity: 0 } 30.450%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k39 { animation-name: k39; }@keyframes k40 { 0%, 30.762% { opacity: 0 } 30.767%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k40 { animation-name: k40; }@keyframes k41 { 0%, 31.079% { opacity: 0 } 31.085%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k41 { animation-name: k41; }@keyframes k42 { 0%, 31.397% { opacity: 0 } 31.402%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k42 { animation-name: k42; }@keyframes k43 { 0%, 31.714% { opacity: 0 } 31.720%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k43 { animation-name: k43; }@keyframes k44 { 0%, 32.032% { opacity: 0 } 32.037%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k44 { animation-name: k44; }@keyframes k45 { 0%, 32.349% { opacity: 0 } 32.355%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k45 { animation-name: k45; }@keyframes k46 { 0%, 32.667% { opacity: 0 } 32.672%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k46 { animation-name: k46; }@keyframes k47 { 0%, 32.984% { opacity: 0 } 32.990%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k47 { animation-name: k47; }@keyframes k48 { 0%, 33.302% { opacity: 0 } 33.307%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k48 { animation-name: k48; }@keyframes k49 { 0%, 33.619% { opacity: 0 } 33.625%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k49 { animation-name: k49; }@keyframes k50 { 0%, 33.937% { opacity: 0 } 33.942%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k50 { animation-name: k50; }@keyframes k51 { 0%, 34.254% { opacity: 0 } 34.260%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k51 { animation-name: k51; }@keyframes k52 { 0%, 34.571% { opacity: 0 } 34.577%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k52 { animation-name: k52; }@keyframes k53 { 0%, 37.389% { opacity: 0 } 37.394%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k53 { animation-name: k53; }@keyframes k54 { 0%, 41.833% { opacity: 0 } 41.839%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
+.k54 { animation-name: k54; }</style>
+<rect width="880" height="288" rx="12" fill="#0A1016"/>
+<rect x=".5" y=".5" width="879" height="287" rx="11.5" fill="none" stroke="#1E2933"/>
+<path d="M12 0.5H868A11.5 11.5 0 0 1 879.5 12V34H0.5V12A11.5 11.5 0 0 1 12 0.5Z" fill="#141C24"/>
+<line x1="0.5" y1="34" x2="879.5" y2="34" stroke="#1E2933"/>
+<text class="t" x="18" y="22" font-size="13" fill="#8494A3">bendi@noc: ~</text>
+<text class="t" x="150" y="22" font-size="13" fill="#4C5A67">LANG=<tspan fill="#6FB7FF">en_US</tspan></text>
+<text class="t" x="862" y="22" font-size="13" fill="#8494A3" text-anchor="end">updated 2 minutes ago</text>
+<text class="t" x="26" y="70" xml:space="preserve"><tspan class="x k1" fill="#6FB7FF">bendi@noc:~$ </tspan><tspan class="x k2" fill="#DCE6EE">u</tspan><tspan class="x k3" fill="#DCE6EE">p</tspan><tspan class="x k4" fill="#DCE6EE">t</tspan><tspan class="x k5" fill="#DCE6EE">i</tspan><tspan class="x k6" fill="#DCE6EE">m</tspan><tspan class="x k7" fill="#DCE6EE">e</tspan></text>
+<text class="t" x="26" y="93" xml:space="preserve"><tspan class="x k8" fill="#DCE6EE" font-weight="400"> 17:42:08 up 90 days,  27 services,  2 failing,  load average: 0.07, 0.04, 0.03</tspan></text>
+<text class="t" x="26" y="116" xml:space="preserve"><tspan class="x k9" fill="#6FB7FF">bendi@noc:~$ </tspan><tspan class="x k10" fill="#DCE6EE">s</tspan><tspan class="x k11" fill="#DCE6EE">y</tspan><tspan class="x k12" fill="#DCE6EE">s</tspan><tspan class="x k13" fill="#DCE6EE">t</tspan><tspan class="x k14" fill="#DCE6EE">e</tspan><tspan class="x k15" fill="#DCE6EE">m</tspan><tspan class="x k16" fill="#DCE6EE">c</tspan><tspan class="x k17" fill="#DCE6EE">t</tspan><tspan class="x k18" fill="#DCE6EE">l</tspan><tspan class="x k19" fill="#DCE6EE"> </tspan><tspan class="x k20" fill="#DCE6EE">-</tspan><tspan class="x k21" fill="#DCE6EE">-</tspan><tspan class="x k22" fill="#DCE6EE">f</tspan><tspan class="x k23" fill="#DCE6EE">a</tspan><tspan class="x k24" fill="#DCE6EE">i</tspan><tspan class="x k25" fill="#DCE6EE">l</tspan><tspan class="x k26" fill="#DCE6EE">e</tspan><tspan class="x k27" fill="#DCE6EE">d</tspan></text>
+<text class="t" x="26" y="139" xml:space="preserve"><tspan class="x k28" fill="#FF4D4D" font-weight="700">[FAILED]</tspan><tspan class="x k28" fill="#DCE6EE" font-weight="700"> Cloudflare and AWS are having problems.</tspan></text>
+<text class="t" x="26" y="162" xml:space="preserve"><tspan class="x k29" fill="#FF4D4D" font-weight="400">  ● </tspan><tspan class="x k29" fill="#DCE6EE" font-weight="400">cloudflare    </tspan><tspan class="x k29" fill="#FF4D4D" font-weight="400">major outage    </tspan><tspan class="x k29" fill="#8494A3" font-weight="400">62 of 473 components affected</tspan></text>
+<text class="t" x="26" y="185" xml:space="preserve"><tspan class="x k30" fill="#FF8A2A" font-weight="400">  ● </tspan><tspan class="x k30" fill="#DCE6EE" font-weight="400">aws           </tspan><tspan class="x k30" fill="#FF8A2A" font-weight="400">partial outage  </tspan><tspan class="x k30" fill="#8494A3" font-weight="400">Multiple services (UAE): Region Availability</tspan></text>
+<text class="t" x="26" y="208" xml:space="preserve"><tspan class="x k31" fill="#6FB7FF">bendi@noc:~$ </tspan><tspan class="x k32" fill="#DCE6EE">g</tspan><tspan class="x k33" fill="#DCE6EE">e</tspan><tspan class="x k34" fill="#DCE6EE">o</tspan><tspan class="x k35" fill="#DCE6EE">i</tspan><tspan class="x k36" fill="#DCE6EE">p</tspan><tspan class="x k37" fill="#DCE6EE">l</tspan><tspan class="x k38" fill="#DCE6EE">o</tspan><tspan class="x k39" fill="#DCE6EE">o</tspan><tspan class="x k40" fill="#DCE6EE">k</tspan><tspan class="x k41" fill="#DCE6EE">u</tspan><tspan class="x k42" fill="#DCE6EE">p</tspan><tspan class="x k43" fill="#DCE6EE"> </tspan><tspan class="x k44" fill="#DCE6EE">s</tspan><tspan class="x k45" fill="#DCE6EE">i</tspan><tspan class="x k46" fill="#DCE6EE">n</tspan><tspan class="x k47" fill="#DCE6EE">g</tspan><tspan class="x k48" fill="#DCE6EE">a</tspan><tspan class="x k49" fill="#DCE6EE">p</tspan><tspan class="x k50" fill="#DCE6EE">o</tspan><tspan class="x k51" fill="#DCE6EE">r</tspan><tspan class="x k52" fill="#DCE6EE">e</tspan></text>
+<text class="t" x="26" y="231" xml:space="preserve"><tspan class="x k53" fill="#F2C230" font-weight="400">● </tspan><tspan class="x k53" fill="#DCE6EE" font-weight="400">Singapore  </tspan><tspan class="x k53" fill="#4C5A67" font-weight="400">1.35°N 103.82°E  </tspan><tspan class="x k53" fill="#6FB7FF" font-weight="400">linode</tspan><tspan class="x k53" fill="#F2C230" font-weight="400"> (degraded), </tspan><tspan class="x k53" fill="#6FB7FF" font-weight="400">akamai</tspan><tspan class="x k53" fill="#F2C230" font-weight="400"> (degraded)</tspan></text>
+<rect class="x k54" x="143.4" y="241" width="9.0" height="18" fill="#DCE6EE"><animate attributeName="fill-opacity" values="1;1;0;0" keyTimes="0;.5;.5;1" dur="1.05s" repeatCount="indefinite"/></rect>
+<text class="t" x="26" y="254" xml:space="preserve"><tspan class="x k54" fill="#6FB7FF">bendi@noc:~$ </tspan></text>
+</svg>

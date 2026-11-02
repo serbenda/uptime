@@ -1,20 +1,60 @@
 <div align="center">
 
-# uptime
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/uptime-oscuro.svg">
+  <img src="docs/logo/uptime-claro.svg" alt="uptime" width="440">
+</picture>
 
-**Is it down, or is it just me?**
+### Is it down, or is it just me?
 
-Real-time status of the IT services we rely on every day: GitHub, Microsoft Azure,<br>
-Red Hat, Google Cloud, AWS, Cloudflare and more. Incidents, maintenance and outages in one panel,<br>
+Real-time status of the IT services we rely on every day: GitHub, Microsoft Azure, Red Hat,<br>
+Google Cloud, AWS, Cloudflare and 21 more. Incidents, maintenance and outages in one NOC,<br>
 with a world map of failures and a terminal you can type into.
+
+**[bendi.dev/uptime](https://bendi.dev/uptime)**
 
 [![Update data](https://github.com/serbenda/uptime/actions/workflows/actualizar.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/actualizar.yml)
 [![Tests](https://github.com/serbenda/uptime/actions/workflows/pruebas.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/pruebas.yml)
 [![Sponsor uptime on GitHub Sponsors](https://img.shields.io/badge/Sponsor_uptime-GitHub_Sponsors-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/serbenda)
+<br>
+![27 providers](https://img.shields.io/badge/providers-27-43D17F?style=flat-square&labelColor=18212A)
+![7 status formats](https://img.shields.io/badge/status_formats-7-5AA9FF?style=flat-square&labelColor=18212A)
+![243 cities on the map](https://img.shields.io/badge/cities_on_the_map-243-F2C230?style=flat-square&labelColor=18212A)
+![Checked every 10 minutes](https://img.shields.io/badge/checked_every-10_min-FF8A2A?style=flat-square&labelColor=18212A)
+![0 servers](https://img.shields.io/badge/servers-0-FF4D4D?style=flat-square&labelColor=18212A)
+![0 dependencies](https://img.shields.io/badge/dependencies-0-B79CFF?style=flat-square&labelColor=18212A)
+![English and Spanish](https://img.shields.io/badge/languages-English_and_Spanish-8494A3?style=flat-square&labelColor=18212A)
 
-<img src="docs/screenshots/hero.webp" alt="The top of uptime: a console answering “5 services are having problems” with the list of failures, and the outage map below" width="900">
+<br>
+
+<img src="docs/logo/terminal.svg" alt="An uptime terminal session typing itself: uptime, systemctl --failed showing Cloudflare and AWS with problems, and geoiplookup singapore" width="880">
 
 </div>
+
+<br>
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<a href="#the-outage-map"><img src="docs/screenshots/map.webp" alt="The outage map"></a>
+<br><b>A world map made of LEDs.</b> Every failure lights up where it happens, by cloud region, airport code, city or country. Click a dot to see who's failing there and why.
+</td>
+<td width="50%" valign="top">
+<a href="#the-terminal"><img src="docs/screenshots/terminal.webp" alt="The terminal"></a>
+<br><b>A terminal you can type into.</b> <code>status github</code>, <code>systemctl --failed</code>, <code>geoiplookup madrid</code>, <code>top</code>, <code>neofetch</code>… with Tab completion, history and a few easter eggs.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<a href="#racks-and-drawers"><img src="docs/screenshots/racks-card.webp" alt="The racks"></a>
+<br><b>One rack per category, one server per provider.</b> A status LED, 90 days of history and an availability display. Pull a server out to read its diagnostics.
+</td>
+<td width="50%" valign="top">
+<a href="#open-incidents"><img src="docs/screenshots/incidents.webp" alt="Open incidents"></a>
+<br><b>Every open incident in one journal.</b> Most severe first, with the provider's latest update and a link to the source. Security advisories never count as outages.
+</td>
+</tr>
+</table>
 
 > [!NOTE]
 > uptime **does not probe** services itself: it reads what each provider publishes on its official status page. If a provider is slow to acknowledge a problem, or never reports it, it won't show up here either. Availability figures are an estimate based on those pages. They are nobody's SLA and carry no contractual value.
@@ -408,6 +448,9 @@ On top of that, three corrections apply:
 
 ### How each format maps
 
+<details>
+<summary><b>How each format maps to the scale (table)</b></summary>
+
 | Format | Original value | Status |
 |---|---|---|
 | Statuspage, component | `operational` · `degraded_performance` · `partial_outage` · `major_outage` · `under_maintenance` | operational · degraded · partial · major · maintenance |
@@ -419,6 +462,8 @@ On top of that, three corrections apply:
 | Azure DevOps | `healthy` · `advisory` · `degraded` · `unhealthy` | operational · degraded · partial · major |
 | AWS | any event; *informational* in the title | partial; degraded |
 | Slack | `notice` · `incident` · `outage` · `maintenance` | degraded · partial · major · maintenance |
+
+</details>
 
 Statuspage phases are translated too: *Investigating*, *Identified*, *Monitoring*, *Resolved*, *Postmortem*, *Scheduled*, *In progress*, *Verifying*, *Completed*.
 
@@ -487,6 +532,9 @@ For each place, uptime stores its **worst level**, how many failures are there (
 
 [`data/geo/lugares_base.json`](data/geo/lugares_base.json) is maintained by hand:
 
+<details>
+<summary><b>What the gazetteer contains</b></summary>
+
 | Section | Content |
 |---|---|
 | `ciudades` | 243 cities with data centres or points of presence: `[IATA, English name, Spanish name, ISO-2 country, lat, lon]`. A trailing `"-"` marks ambiguous names (`Córdoba`, `San José`, `Salvador`), which are only matched by their code |
@@ -495,6 +543,8 @@ For each place, uptime stores its **worst level**, how many failures are there (
 | `zonas` and `alias_zonas` | 11 world zones with a representative point, and 17 ways of naming them |
 | `alias_paises` | Short forms of country names |
 | `paises_extra` | Small countries the map doesn't draw (Singapore, Bahrain, Hong Kong, Luxembourg, Malta…) with their coordinates |
+
+</details>
 
 [`scripts/generar_mapa.py`](scripts/generar_mapa.py) merges it with the borders (`mundo.geojson`) and the country names (`paises.json`) and generates two files that are committed to the repository:
 
@@ -759,13 +809,18 @@ uptime/
 │   ├── generar_mapa.py           Builds mapa.json and lugares.json from data/geo/
 │   └── salud.py                  Report of failing sources, for the issue
 ├── tests/test_actualizar.py      Tests with sample responses for each format
-├── docs/screenshots/             Screenshots for this README
+├── docs/
+│   ├── logo/                     Logo, mark, favicon, social preview and the animated terminal
+│   └── screenshots/              Screenshots for this README
 └── .github/
     ├── workflows/                actualizar.yml and pruebas.yml
     └── FUNDING.yml               The repository's Sponsor button
 ```
 
-The code is written in Spanish (identifiers, comments and commit messages), the same as atalaya. The table below is a glossary for the names you'll meet most often.
+The code is written in Spanish (identifiers, comments and commit messages), the same as atalaya. The glossary below translates the names you'll meet most often.
+
+<details>
+<summary><b>Glossary: Spanish names in the code</b></summary>
 
 | Spanish | English |
 |---|---|
@@ -775,6 +830,8 @@ The code is written in Spanish (identifiers, comments and commit messages), the 
 | `historial` · `muestras` · `caídas` | history · samples · outages |
 | `lugar` · `ciudad` · `país` · `zona` · `mapa` · `ubicar` | place · city · country · zone · map · locate |
 | `pintar` · `cajón` · `fijado` · `idioma` · `orden` | render · drawer · pinned · language · command |
+
+</details>
 
 There's no generated data on `main`: `estado.json`, `historial.json` and `incidencias.json` are in `.gitignore` and live on the `datos` branch.
 
@@ -801,6 +858,9 @@ python3 scripts/generar_mapa.py
 `UPTIME_SALIDA=/path` changes where `actualizar.py` writes (the Action uses it to write into its copy of the `datos` branch).
 
 ### Constants
+
+<details>
+<summary><b>All tunable constants, in the collector and in the site</b></summary>
 
 In [`actualizar.py`](scripts/actualizar.py):
 
@@ -829,6 +889,8 @@ In the site:
 | `LIMITE` | `app.js` | 8 | Incidents shown before *more entries* |
 | `POR_PROVEEDOR` | `app.js` | 3 | Maintenance windows shown per provider |
 | `MAX_NODOS` | `terminal.js` | 300 | Output lines kept by the terminal |
+
+</details>
 
 ### The common provider format
 
@@ -860,6 +922,9 @@ This is what every `procesar_<tipo>()` returns and what the site reads. `vacio()
 
 [`tests/test_actualizar.py`](tests/test_actualizar.py) has 33 `unittest` tests built on sample responses for each format. They don't connect to anything: if a provider changes its format, these tests won't notice, but the Action will (it flags it as *formato inesperado* and, if it persists, opens the issue).
 
+<details>
+<summary><b>What each test class covers</b></summary>
+
 | Class | What it checks |
 |---|---|
 | `TestUtilidades` | The level scale, dates (ISO, RFC 822, seconds and milliseconds since 1970), HTML stripping and UTF-16 JSON |
@@ -868,6 +933,8 @@ This is what every `procesar_<tipo>()` returns and what the site reads. `vacio()
 | `TestUbicacion` | 13 real-world texts with their expected result (Cloudflare, Linode, AWS, Google, Azure, Akamai, acronyms that aren't airports…), that the gazetteer has no broken references, and that `localizar()` merges, ranks and skips advisories |
 | `TestConsulta` | URLs, that a network or format error doesn't break anything, and that every provider in the config is valid |
 | `TestPersistencia` | That a failing source keeps its data and becomes *no data* on time, that history is trimmed and doesn't count what wasn't measured, and that incidents open and close (and don't close when the source fails) |
+
+</details>
 
 The site has no automated tests; it's checked in the browser, on desktop and mobile, in both languages.
 
@@ -893,6 +960,17 @@ To add a string, add the same key to both `es` and `en`. To add a language, copy
 | `--prompt` | `#6FB7FF` | Prompt, terminal links, focus |
 | `--operativo` · `--mantenimiento` · `--degradado` · `--parcial` · `--grave` · `--desconocido` · `--aviso` | `#43D17F` · `#5AA9FF` · `#F2C230` · `#FF8A2A` · `#FF4D4D` · `#6B7885` · `#B79CFF` | The LEDs |
 
+- **Logo**: the word *uptime* is drawn by hand as stroked paths (no font needed, so it renders the same everywhere), and the dot on the **i** is the status LED. Next to it, the mark: a 1U server with its LED and the 90-day bars, the most uptime-specific element on the site.
+
+  | File | Use |
+  |---|---|
+  | [`docs/logo/uptime-oscuro.svg`](docs/logo/uptime-oscuro.svg) | Logo for dark backgrounds |
+  | [`docs/logo/uptime-claro.svg`](docs/logo/uptime-claro.svg) | Logo for light backgrounds |
+  | [`docs/logo/uptime-marca.svg`](docs/logo/uptime-marca.svg) | Square mark, for avatars |
+  | [`docs/logo/uptime-favicon.svg`](docs/logo/uptime-favicon.svg) | Simplified mark for 16–32 px; on the site its LED takes the colour of the worst status |
+  | [`docs/logo/uptime-social.png`](docs/logo/uptime-social.png) | 1280 × 640 preview for links (Open Graph), with the LED map |
+  | [`docs/logo/terminal.svg`](docs/logo/terminal.svg) | The animated terminal at the top of this README (CSS animation, respects reduced motion) |
+
 - **Type**: [Archivo](https://fonts.google.com/specimen/Archivo), with variable width (narrow in the verdict and headings), for labels; [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) for anything that comes out of a terminal.
 - **Colour means something**: bright colours are reserved for LEDs and statuses; everything else is metal and ink.
 - **A single entrance animation**: the console typing itself. All other motion responds to something (an LED warning you, a dot pulsing, a drawer sliding out).
@@ -914,6 +992,9 @@ Field names are in Spanish, like the code (see the [glossary](#layout)).
 ### On the `datos` branch
 
 #### `estado.json`
+
+<details>
+<summary><b>Full example and field reference</b></summary>
 
 ```json
 {
@@ -990,6 +1071,8 @@ Field names are in Spanish, like the code (see the [glossary](#layout)).
 | `proveedores[].lugares[].n` | number | How many components and incidents placed it there |
 | `proveedores[].sin_ubicacion` | number | Failures that couldn't be placed |
 | `proveedores[].fuente` | object | Status page health: last check, whether it responded, error, consecutive failures and last good data |
+
+</details>
 
 #### `historial.json`
 
@@ -1154,4 +1237,14 @@ A sibling of [atalaya](https://github.com/serbenda/atalaya). Made by [Bendi](htt
 
 ## Support the project
 
+<a href="https://github.com/sponsors/serbenda"><img src="docs/screenshots/psu.webp" alt="The NOC's power supply: the GitHub Sponsors section of the site" width="900"></a>
+
 uptime is a personal project: free, with no ads and no tracking. If it's ever saved you from an "is it me or is it them?", you can help keep the lights on through [GitHub Sponsors](https://github.com/sponsors/serbenda). On the site it's the NOC's power supply, and in the terminal, `sponsor`.
+
+<br>
+
+<div align="center">
+<img src="docs/logo/uptime-marca.svg" alt="" width="56">
+<br>
+<sub><code>bendi@noc:~$ exit</code><br>There's no way out: this is a NOC.</sub>
+</div>
