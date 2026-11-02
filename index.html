@@ -3,91 +3,129 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0F151B">
   <title>uptime</title>
   <meta name="description" content="¿Está caído o soy yo? Estado de GitHub, Microsoft, Red Hat, Google Cloud, AWS y otros servicios en un solo panel.">
-  <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='7' fill='%231D2935'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%232F8F5B'/%3E%3C/svg%3E">
+  <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='20' rx='3' fill='%23202A34'/%3E%3Ccircle cx='9' cy='16' r='4' fill='%2343D17F'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/estilo.css?v=1">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilo.css?v=2">
   <meta name="uptime-datos" content="https://raw.githubusercontent.com/serbenda/uptime/datos/data/">
 </head>
 <body>
-  <header class="barra">
-    <a class="marca" href="./">uptime</a>
-    <p class="actualizado" id="actualizado">Cargando…</p>
-  </header>
+  <main class="sala">
 
-  <main>
-    <section class="veredicto" id="veredicto" data-nivel="desconocido" aria-live="polite">
-      <h1 id="titular">Comprobando servicios…</h1>
-      <p id="subtitular"></p>
-    </section>
-
-    <section class="bloque" id="bloque-activas" hidden>
-      <h2>Incidencias abiertas</h2>
-      <ol class="activas" id="activas"></ol>
-    </section>
-
-    <section class="bloque" aria-labelledby="titulo-servicios">
-      <div class="cabecera-bloque">
-        <h2 id="titulo-servicios">Servicios</h2>
-        <button type="button" class="boton" id="avisos" hidden>Avisarme si falla uno vigilado</button>
+    <!-- Consola: el veredicto como salida de `uptime` y `systemctl` -->
+    <section class="consola" aria-labelledby="veredicto">
+      <div class="consola-barra">
+        <span class="consola-titulo">bendi@noc: ~</span>
+        <span class="consola-estado" id="actualizado">conectando…</span>
       </div>
-      <div class="filtros">
-        <label class="buscar">
+      <div class="consola-cuerpo" id="consola">
+        <p class="linea"><span class="prompt">bendi@noc:~$</span> uptime</p>
+        <p class="linea salida" id="linea-uptime">&nbsp;</p>
+        <p class="linea"><span class="prompt">bendi@noc:~$</span> <span id="orden-estado">systemctl status proveedores</span></p>
+        <h1 class="veredicto" id="veredicto" data-nivel="desconocido">
+          <span class="marca-systemd" id="marca">[ .... ]</span>
+          <span id="titular">Comprobando servicios…</span>
+        </h1>
+        <p class="linea salida tenue" id="subtitular"></p>
+        <ul class="fallos" id="fallos"></ul>
+        <p class="linea"><span class="prompt">bendi@noc:~$</span> <span class="cursor" aria-hidden="true"></span></p>
+      </div>
+    </section>
+
+    <!-- Incidencias abiertas, como un journal en vivo -->
+    <section class="panel" id="bloque-activas" hidden aria-labelledby="t-activas">
+      <header class="panel-cabecera">
+        <h2 id="t-activas">Incidencias abiertas</h2>
+        <code class="panel-orden">journalctl -f -p warning</code>
+      </header>
+      <ol class="journal" id="activas"></ol>
+    </section>
+
+    <!-- Racks -->
+    <section aria-labelledby="t-racks">
+      <header class="panel-cabecera">
+        <h2 id="t-racks">Servicios</h2>
+        <button type="button" class="boton" id="avisos" hidden>Avisarme si falla uno fijado</button>
+      </header>
+
+      <form class="filtro" id="filtro" role="search" onsubmit="return false">
+        <label class="filtro-busca">
+          <span class="prompt" aria-hidden="true">$ grep -i</span>
           <span class="oculto">Buscar un servicio</span>
-          <input id="buscar" type="search" placeholder="Buscar un servicio" autocomplete="off">
+          <input id="buscar" type="search" placeholder="servicio" autocomplete="off" spellcheck="false">
         </label>
-        <div class="categorias" id="categorias" role="group" aria-label="Categoría"></div>
-        <label class="interruptor"><input type="checkbox" id="solo-problemas"> Solo con problemas</label>
-      </div>
-      <div id="servicios"></div>
-      <p class="leyenda" id="leyenda">
-        Cada barra es un día de los últimos 90 según nuestras comprobaciones cada 10 minutos.
-        El porcentaje es el tiempo sin caída parcial ni grave.
+        <div class="filtro-flags" id="categorias" role="group" aria-label="Rack"></div>
+        <label class="flag interruptor"><input type="checkbox" id="solo-problemas"><span>--solo-fallos</span></label>
+      </form>
+
+      <div class="racks" id="racks"></div>
+
+      <dl class="leyenda" aria-label="Leyenda de LED">
+        <div><dt><span class="led" data-nivel="operativo"></span></dt><dd>operativo</dd></div>
+        <div><dt><span class="led" data-nivel="mantenimiento"></span></dt><dd>mantenimiento</dd></div>
+        <div><dt><span class="led" data-nivel="degradado"></span></dt><dd>degradado</dd></div>
+        <div><dt><span class="led" data-nivel="parcial"></span></dt><dd>caída parcial</dd></div>
+        <div><dt><span class="led" data-nivel="grave"></span></dt><dd>caída grave</dd></div>
+        <div><dt><span class="led" data-nivel="desconocido"></span></dt><dd>sin datos</dd></div>
+      </dl>
+      <p class="nota">
+        Cada servidor muestra 90 días: una barra por día, más alta cuanto peor fue. El porcentaje es el tiempo sin caída
+        parcial ni grave, según las comprobaciones cada 10 minutos.
       </p>
     </section>
 
-    <section class="bloque" id="bloque-mantenimientos" hidden>
-      <h2>Mantenimientos programados</h2>
-      <ul class="mantenimientos" id="mantenimientos"></ul>
-    </section>
+    <div class="pareja">
+      <section class="panel" id="bloque-mantenimientos" hidden aria-labelledby="t-mant">
+        <header class="panel-cabecera">
+          <h2 id="t-mant">Mantenimientos</h2>
+          <code class="panel-orden">crontab -l</code>
+        </header>
+        <ol class="tabla" id="mantenimientos"></ol>
+      </section>
 
-    <section class="bloque" id="bloque-recientes" hidden>
-      <h2>Últimos 30 días</h2>
-      <ul class="recientes" id="recientes"></ul>
-    </section>
+      <section class="panel" id="bloque-recientes" hidden aria-labelledby="t-hist">
+        <header class="panel-cabecera">
+          <h2 id="t-hist">Últimos 30 días</h2>
+          <code class="panel-orden">last -30d</code>
+        </header>
+        <ol class="tabla" id="recientes"></ol>
+      </section>
+    </div>
   </main>
 
   <footer class="pie">
     <p>
-      uptime recoge cada 10 minutos las páginas de estado oficiales de cada proveedor.
-      Si un proveedor no publica un problema, aquí tampoco aparece.
-      Código en <a href="https://github.com/serbenda/uptime">GitHub</a>.
+      uptime lee cada 10 minutos las páginas de estado oficiales de cada proveedor: si un proveedor no publica un problema,
+      aquí tampoco aparece. Código en <a href="https://github.com/serbenda/uptime">github.com/serbenda/uptime</a>.
       <a href="https://github.com/sponsors/serbenda">Apoya el proyecto</a>.
     </p>
   </footer>
 
-  <template id="plantilla-servicio">
-    <article class="servicio">
-      <div class="fila">
-        <button type="button" class="vigilar" aria-pressed="false" title="Vigilar este servicio">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5l2.3 4.8 5.2.7-3.8 3.6.9 5.2L10 14.3l-4.6 2.5.9-5.2L2.5 8l5.2-.7z"/></svg>
-          <span class="oculto">Vigilar</span>
-        </button>
+  <template id="plantilla-servidor">
+    <article class="servidor">
+      <div class="frontal">
+        <span class="u" aria-hidden="true"></span>
         <button type="button" class="abrir" aria-expanded="false">
-          <span class="punto" aria-hidden="true"></span>
+          <span class="led" aria-hidden="true"></span>
           <span class="nombre"></span>
           <span class="estado"></span>
         </button>
-        <div class="tira" role="img"></div>
-        <span class="porcentaje"></span>
+        <div class="historia" role="img"></div>
+        <span class="lcd"></span>
+        <button type="button" class="fijar" aria-pressed="false">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 1.5h6M6 1.5v4.2L3.8 8.4v1.1h8.4V8.4L10 5.7V1.5M8 9.5v5"/></svg>
+          <span class="oculto">Fijar arriba</span>
+        </button>
       </div>
-      <div class="detalle" hidden></div>
+      <div class="cajon" hidden></div>
     </article>
   </template>
 
-  <script src="js/app.js?v=1"></script>
+  <script src="js/app.js?v=2"></script>
 </body>
 </html>
