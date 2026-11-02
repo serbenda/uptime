@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>uptime</title>
+  <meta name="description" content="¿Está caído o soy yo? Estado de GitHub, Microsoft, Red Hat, Google Cloud, AWS y otros servicios en un solo panel.">
+  <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='7' fill='%231D2935'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%232F8F5B'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilo.css?v=1">
+  <meta name="uptime-datos" content="https://raw.githubusercontent.com/serbenda/uptime/datos/data/">
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="./">uptime</a>
+    <p class="actualizado" id="actualizado">Cargando…</p>
+  </header>
+
+  <main>
+    <section class="veredicto" id="veredicto" data-nivel="desconocido" aria-live="polite">
+      <h1 id="titular">Comprobando servicios…</h1>
+      <p id="subtitular"></p>
+    </section>
+
+    <section class="bloque" id="bloque-activas" hidden>
+      <h2>Incidencias abiertas</h2>
+      <ol class="activas" id="activas"></ol>
+    </section>
+
+    <section class="bloque" aria-labelledby="titulo-servicios">
+      <div class="cabecera-bloque">
+        <h2 id="titulo-servicios">Servicios</h2>
+        <button type="button" class="boton" id="avisos" hidden>Avisarme si falla uno vigilado</button>
+      </div>
+      <div class="filtros">
+        <label class="buscar">
+          <span class="oculto">Buscar un servicio</span>
+          <input id="buscar" type="search" placeholder="Buscar un servicio" autocomplete="off">
+        </label>
+        <div class="categorias" id="categorias" role="group" aria-label="Categoría"></div>
+        <label class="interruptor"><input type="checkbox" id="solo-problemas"> Solo con problemas</label>
+      </div>
+      <div id="servicios"></div>
+      <p class="leyenda" id="leyenda">
+        Cada barra es un día de los últimos 90 según nuestras comprobaciones cada 10 minutos.
+        El porcentaje es el tiempo sin caída parcial ni grave.
+      </p>
+    </section>
+
+    <section class="bloque" id="bloque-mantenimientos" hidden>
+      <h2>Mantenimientos programados</h2>
+      <ul class="mantenimientos" id="mantenimientos"></ul>
+    </section>
+
+    <section class="bloque" id="bloque-recientes" hidden>
+      <h2>Últimos 30 días</h2>
+      <ul class="recientes" id="recientes"></ul>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p>
+      uptime recoge cada 10 minutos las páginas de estado oficiales de cada proveedor.
+      Si un proveedor no publica un problema, aquí tampoco aparece.
+      Código en <a href="https://github.com/serbenda/uptime">GitHub</a>.
+      <a href="https://github.com/sponsors/serbenda">Apoya el proyecto</a>.
+    </p>
+  </footer>
+
+  <template id="plantilla-servicio">
+    <article class="servicio">
+      <div class="fila">
+        <button type="button" class="vigilar" aria-pressed="false" title="Vigilar este servicio">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5l2.3 4.8 5.2.7-3.8 3.6.9 5.2L10 14.3l-4.6 2.5.9-5.2L2.5 8l5.2-.7z"/></svg>
+          <span class="oculto">Vigilar</span>
+        </button>
+        <button type="button" class="abrir" aria-expanded="false">
+          <span class="punto" aria-hidden="true"></span>
+          <span class="nombre"></span>
+          <span class="estado"></span>
+        </button>
+        <div class="tira" role="img"></div>
+        <span class="porcentaje"></span>
+      </div>
+      <div class="detalle" hidden></div>
+    </article>
+  </template>
+
+  <script src="js/app.js?v=1"></script>
+</body>
+</html>
