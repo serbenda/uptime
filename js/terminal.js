@@ -275,7 +275,7 @@
     cat(args) {
       const ruta = args.join(" ");
       if (/servicios\.conf|services\.conf|proveedores/.test(ruta)) return ORDENES.services([]);
-      error(ruta ? `cat: ${ruta}: ${T.term.no_fichero}` : T.term.falta("cat /etc/uptime/servicios.conf"));
+      error(ruta ? `cat: ${ruta}: ${T.term.no_fichero}` : T.term.falta(`cat ${candidatos(["cat", ""])[0]}`));
     },
 
     neofetch() {
@@ -430,7 +430,7 @@
     if (o === "lang") return Object.keys(IDIOMAS);
     if (o === "man") return VISIBLES;
     if (o === "services" || o === "servicios") return Object.keys(estado.datos?.categorias ?? {}).map((id) => T.flags[id].replace(/^--/, ""));
-    if (o === "cat") return ["/etc/uptime/servicios.conf"];
+    if (o === "cat") return [T.html === "en" ? "/etc/uptime/services.conf" : "/etc/uptime/servicios.conf"];
     if (o === "geoiplookup") return lugaresActuales().map((g) => normalizar(nombreLugar(g.lugar)).replace(/\s+/g, "-"));
     return [];
   }

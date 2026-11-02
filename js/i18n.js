@@ -252,7 +252,7 @@ const IDIOMAS = {
       ping_nota: "uptime doesn't ping anyone: it reads the official status page every 10 minutes.",
       cab_top: ["SERVICE", "AVAILABLE", "DAYS WITH OUTAGES"],
       sin_mant: "no scheduled maintenance",
-      serv_cabecera: (n) => `# /etc/uptime/servicios.conf: ${n} services checked every 10 minutes from their official status page`,
+      serv_cabecera: (n) => `# /etc/uptime/services.conf: ${n} services checked every 10 minutes from their official status page`,
       cab_serv: ["SERVICE", "NAME", "FORMAT", "STATUS PAGE"],
       serv_pie: "# status <service> for one of them; ls to see them with their status.",
       no_fichero: "No such file or directory",
