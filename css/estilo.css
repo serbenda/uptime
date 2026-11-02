@@ -92,6 +92,21 @@ code, .mono { font-family: var(--mono); }
 }
 @keyframes parpadeo { 50% { opacity: 0.35; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); } }
 
+/* ------------------------------------------------ logo */
+
+.cabecera-sitio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.logo { display: block; line-height: 0; border-radius: 6px; }
+.logo svg { height: 44px; width: auto; }
+.logo .logo-led { fill: var(--nivel); transition: fill 0.4s; }
+.lema { margin: 0; font-family: var(--mono); font-size: 0.8125rem; color: var(--tenue); }
+
 /* ------------------------------------------------ consola (cabecera) */
 
 .consola {
@@ -873,6 +888,7 @@ code, .mono { font-family: var(--mono); }
 @media (max-width: 720px) {
   .sala, .pie { padding-inline: 12px; }
   .sala { padding-top: 12px; }
+  .logo svg { height: 34px; }
   .consola-cuerpo { padding: 16px; font-size: 0.8125rem; }
   .fallos li { grid-template-columns: 2ch minmax(0, 1fr) auto; }
   .fallos .fallo-texto { display: none; }
