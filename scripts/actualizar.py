@@ -48,9 +48,17 @@ TIEMPO_ESPERA = 20
 REINTENTOS = 2
 AGENTE = "uptime/1.0 (+https://github.com/serbenda/uptime)"
 
-# De mejor a peor. "desconocido" queda fuera de la escala: no se sabe.
+# De mejor a peor. Quedan fuera de la escala "desconocido" (no se sabe) y, solo para
+# incidencias, "aviso": avisos informativos (de seguridad, por ejemplo) que el proveedor
+# publica sin impacto en el servicio. Se muestran, pero no cambian el estado.
 NIVELES = ["operativo", "mantenimiento", "degradado", "parcial", "grave"]
 RANGO = {n: i for i, n in enumerate(NIVELES)}
+
+# Proveedores con muchos componentes (Cloudflare tiene cientos de centros de datos) casi
+# siempre tienen alguno caído o redirigido. Si afecta a menos de esta fracción y no hay
+# ninguna incidencia seria, el proveedor se queda como mucho en "degradado".
+ALCANCE_MINIMO = 0.05
+COMPONENTES_MINIMOS = 20
 
 
 class FormatoInesperado(Exception):
@@ -63,6 +71,24 @@ class FormatoInesperado(Exception):
 def peor(*niveles):
     validos = [n for n in niveles if n in RANGO]
     return max(validos, key=RANGO.get) if validos else "operativo"
+
+
+def tope(nivel, maximo):
+    return nivel if RANGO.get(nivel, -1) <= RANGO[maximo] else maximo
+
+
+def estado_final(r, indicador, afectados, en_curso=False):
+    """Peor nivel entre indicador, componentes, incidencias y mantenimientos, con el tope de alcance."""
+    impactos = [i["impacto"] for i in r["incidencias"]]
+    componentes = peor(*(c["estado"] for c in afectados))
+    total = r["total_componentes"]
+    serias = any(RANGO.get(n, -1) >= RANGO["parcial"] for n in impactos)
+    r["afectados"] = len(afectados)
+    r["alcance_limitado"] = bool(afectados) and total >= COMPONENTES_MINIMOS \
+        and len(afectados) / total < ALCANCE_MINIMO and not serias
+    if r["alcance_limitado"]:
+        componentes, indicador = tope(componentes, "degradado"), tope(indicador, "degradado")
+    return peor(indicador, componentes, *impactos, "mantenimiento" if en_curso else "operativo")
 
 
 def texto_limpio(valor, limite=MAX_TEXTO):
@@ -127,15 +153,15 @@ def leer_json(datos):
 
 
 def vacio():
-    return {"estado": "operativo", "resumen": "", "componentes": [], "total_componentes": 0,
-            "incidencias": [], "mantenimientos": []}
+    return {"estado": "operativo", "resumen": "", "componentes": [], "total_componentes": 0, "afectados": 0,
+            "alcance_limitado": False, "incidencias": [], "mantenimientos": []}
 
 
 # ---------------------------------------------------------------- Statuspage
 
 SP_COMPONENTE = {"operational": "operativo", "degraded_performance": "degradado", "partial_outage": "parcial",
                  "major_outage": "grave", "under_maintenance": "mantenimiento"}
-SP_IMPACTO = {"none": "degradado", "minor": "degradado", "major": "parcial", "critical": "grave",
+SP_IMPACTO = {"none": "aviso", "minor": "degradado", "major": "parcial", "critical": "grave",
               "maintenance": "mantenimiento"}
 SP_INDICADOR = {"none": "operativo", "minor": "degradado", "major": "parcial", "critical": "grave",
                 "maintenance": "mantenimiento"}
@@ -198,10 +224,7 @@ def procesar_statuspage(datos, prov):
 
     st = datos.get("status") or {}
     r["resumen"] = texto_limpio(st.get("description"), 200)
-    r["estado"] = peor(SP_INDICADOR.get(st.get("indicator"), "operativo"),
-                       *(c["estado"] for c in afectados),
-                       *(i["impacto"] for i in r["incidencias"]),
-                       "mantenimiento" if en_curso else "operativo")
+    r["estado"] = estado_final(r, SP_INDICADOR.get(st.get("indicator"), "operativo"), afectados, en_curso)
     return r
 
 
@@ -262,9 +285,7 @@ def procesar_statusio(datos, prov):
 
     general = res["status_overall"] or {}
     r["resumen"] = texto_limpio(general.get("status"), 200)
-    r["estado"] = peor(sio_nivel(general.get("status_code")), *(c["estado"] for c in afectados),
-                       *(i["impacto"] for i in r["incidencias"]),
-                       "mantenimiento" if mant.get("active") else "operativo")
+    r["estado"] = estado_final(r, sio_nivel(general.get("status_code")), afectados, bool(mant.get("active")))
     return r
 
 
@@ -304,7 +325,7 @@ def procesar_google(datos, prov):
         })
     r["componentes"] = sorted(({"nombre": n, "estado": e} for n, e in afectados.items()),
                               key=lambda c: -RANGO[c["estado"]])[:MAX_COMPONENTES]
-    r["estado"] = peor(*(i["impacto"] for i in r["incidencias"]))
+    r["estado"] = estado_final(r, "operativo", r["componentes"])
     r["resumen"] = "Sin incidencias activas" if not r["incidencias"] else ""
     return r
 
@@ -334,7 +355,7 @@ def procesar_azure(datos, prov):
             "mensaje": texto_limpio(item.findtext("description")),
             "enlace": item.findtext("link") or prov.get("web"),
         })
-    r["estado"] = peor(*(i["impacto"] for i in r["incidencias"]))
+    r["estado"] = estado_final(r, "operativo", r["componentes"])
     r["resumen"] = "Sin incidencias activas" if not r["incidencias"] else ""
     return r
 
@@ -364,7 +385,11 @@ def procesar_azure_devops(datos, prov):
     r["componentes"] = afectados[:MAX_COMPONENTES]
     nivel = ADO_SALUD.get(st.get("health"), "operativo")
     r["resumen"] = texto_limpio(st.get("message"), 200)
-    if nivel != "operativo":
+    if nivel != "operativo" and "maintenance" in r["resumen"].lower():
+        nivel = "mantenimiento"
+        afectados = [dict(c, estado="mantenimiento") for c in afectados]
+        r["componentes"] = afectados[:MAX_COMPONENTES]
+    if RANGO[nivel] >= RANGO["degradado"]:
         r["incidencias"].append({
             "id": "ado-" + (fecha_iso(datos.get("lastUpdated")) or HOY)[:10],
             "titulo": r["resumen"] or "Incidencia en Azure DevOps",
@@ -372,7 +397,7 @@ def procesar_azure_devops(datos, prov):
             "actualizado": fecha_iso(datos.get("lastUpdated")),
             "mensaje": "", "enlace": prov.get("web"),
         })
-    r["estado"] = peor(nivel, *(c["estado"] for c in afectados))
+    r["estado"] = estado_final(r, nivel, afectados, nivel == "mantenimiento")
     return r
 
 
@@ -400,7 +425,7 @@ def procesar_aws(datos, prov):
         inicio = fecha_iso(e.get("date") or e.get("start_time"))
         r["incidencias"].append({
             "id": str(e.get("arn") or f"{e.get('service')}-{e.get('date')}"),
-            "titulo": f"{servicio}: {titulo}" if servicio not in titulo else titulo,
+            "titulo": f"{nombre}: {titulo}" if servicio not in titulo else (f"{titulo} ({region})" if region else titulo),
             "impacto": impacto, "fase": "",
             "inicio": inicio,
             "actualizado": fecha_iso(ultimo.get("timestamp")) or inicio,
@@ -409,7 +434,7 @@ def procesar_aws(datos, prov):
         })
     r["componentes"] = sorted(({"nombre": n, "estado": e} for n, e in afectados.items()),
                               key=lambda c: -RANGO[c["estado"]])[:MAX_COMPONENTES]
-    r["estado"] = peor(*(i["impacto"] for i in r["incidencias"]))
+    r["estado"] = estado_final(r, "operativo", r["componentes"])
     r["resumen"] = "Sin incidencias activas" if not r["incidencias"] else ""
     return r
 
@@ -443,7 +468,7 @@ def procesar_slack(datos, prov):
         })
     r["componentes"] = sorted(({"nombre": n, "estado": e} for n, e in afectados.items()),
                               key=lambda c: -RANGO[c["estado"]])[:MAX_COMPONENTES]
-    r["estado"] = peor(*(i["impacto"] for i in r["incidencias"]))
+    r["estado"] = estado_final(r, "operativo", r["componentes"])
     r["resumen"] = "Sin incidencias activas" if not r["incidencias"] else ""
     return r
 

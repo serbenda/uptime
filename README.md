@@ -40,16 +40,20 @@ Es hermano de [atalaya](https://github.com/serbenda/atalaya): misma filosofía d
 
 ## Lo que ves en la web
 
+La web es un NOC (centro de operaciones de red): cada categoría es un rack y cada proveedor, un servidor con su LED de estado.
+
 | Parte | Para qué sirve |
 |---|---|
-| **Veredicto** | Una frase que responde a la pregunta: *Todo funciona* o *GitHub y Azure tienen problemas*, con el color del peor estado. El favicon y el título de la pestaña también cambian. |
-| **Incidencias abiertas** | Todas las incidencias activas de todos los proveedores, de más a menos graves, con su fase, cuándo empezaron y el último mensaje del proveedor. |
-| **Servicios** | Una fila por proveedor con su estado, una tira con los últimos 90 días y el porcentaje de disponibilidad. Al pulsarla se ven los componentes afectados, las incidencias y los mantenimientos. Se puede buscar, filtrar por categoría o ver solo los que tienen problemas. |
-| **Vigilados** | La estrella de cada fila fija ese proveedor arriba. Con *Avisarme si falla uno vigilado*, el navegador muestra una notificación cuando empeora o se recupera, mientras la página esté abierta. Se guarda en tu navegador, sin cuentas. |
-| **Mantenimientos programados** | Los que están en curso y los próximos. |
-| **Últimos 30 días** | Registro de las incidencias vistas, con su duración. |
+| **Consola** | Una sesión de terminal que ejecuta `uptime` y `systemctl --failed`. Responde a la pregunta con `[  OK  ] Todo funciona.` o `[FAILED] GitHub y Azure tienen problemas.` y lista los servicios con fallos. El *load average* es real: la fracción de servicios con caída ahora, de media en 7 días y en 30 días. El favicon y el título de la pestaña también cambian de color. |
+| **Incidencias abiertas** | Un `journalctl` con todas las incidencias activas, de más a menos graves. Cada línea se despliega con la fase, el último mensaje del proveedor y el enlace. |
+| **Racks** | Un rack por categoría (nube, desarrollo, red y CDN, colaboración, IA). Cada servidor tiene su LED (parpadea si hay fallos), su estado, una gráfica de 90 días y un display con la disponibilidad. |
+| **Cajón** | Al pulsar un servidor, se extrae y muestra su terminal: `status github` con estado, fuente, disponibilidad, componentes afectados, incidencias con su último mensaje y mantenimientos. |
+| **Filtros** | `grep -i` para buscar y *flags* para elegir rack (`--nube`, `--desarrollo`…) o ver solo los que fallan (`--solo-fallos`). |
+| **Fijados** | La chincheta de cada servidor lo sube a un rack *Fijados*. Con *Avisarme si falla uno fijado*, el navegador avisa cuando empeora o se recupera, mientras la página esté abierta. Se guarda en tu navegador, sin cuentas. |
+| **Mantenimientos** | Un `crontab -l` con los mantenimientos en curso y los próximos, como mucho 3 por proveedor. |
+| **Últimos 30 días** | Un `last` con las incidencias vistas y su duración. |
 
-Todo se puede compartir con un enlace: `#p=github` abre directamente la ficha de GitHub.
+Todo se puede compartir con un enlace: `#p=github` abre directamente el cajón de GitHub.
 
 ### Escala de estados
 
@@ -61,6 +65,9 @@ Todo se puede compartir con un enlace: `#p=github` abre directamente la ficha de
 | Caída parcial | Una parte del servicio no funciona | Sí |
 | Caída grave | El servicio no funciona | Sí |
 | Sin datos | La página de estado del proveedor no responde | No cuenta |
+| Aviso | Solo para incidencias: avisos informativos sin impacto, como los de seguridad (CVE). Se muestran, pero no cambian el estado | No |
+
+En la gráfica de 90 días la altura de cada barra repite su color (más alta, peor día), para que se lea también sin distinguir colores.
 
 ---
 
@@ -71,7 +78,7 @@ La lista vive en [`data/proveedores.json`](data/proveedores.json). Añadir uno q
 | Categoría | Proveedores | Formato |
 |---|---|---|
 | Nube | AWS, Microsoft Azure, Google Cloud, Red Hat, DigitalOcean, Akamai Cloud (Linode) | Varios |
-| Desarrollo | GitHub, GitLab, Bitbucket, Azure DevOps, Docker Hub, Quay.io, HashiCorp, npm, PyPI, CircleCI | Varios |
+| Desarrollo | GitHub, GitLab, Bitbucket, Azure DevOps, Docker Hub, HashiCorp, npm, PyPI, CircleCI | Varios |
 | Red y CDN | Cloudflare, Akamai, Netlify, Vercel | Statuspage |
 | Colaboración | Google Workspace, Slack, Zoom, Jira, Confluence, Dropbox, Discord | Varios |
 | IA | OpenAI | Statuspage |
@@ -85,6 +92,8 @@ La lista vive en [`data/proveedores.json`](data/proveedores.json). Añadir uno q
 | `azure-devops` | API pública de salud | Azure DevOps |
 | `aws` | Eventos públicos actuales del AWS Health Dashboard (en UTF-16) | AWS |
 | `slack` | `slack-status.com/api/v2.0.0/current` | Slack |
+
+Quay.io no aparece aparte porque su página de estado es la de Red Hat.
 
 **Microsoft 365** no está: su estado solo se publica a través de Microsoft Graph, con credenciales de un tenant. Ver la [hoja de ruta](#hoja-de-ruta).
 
@@ -118,6 +127,8 @@ flowchart TB
 - **Leer, no sondear.** Hacer ping a `github.com` desde un runner de GitHub no dice nada útil y no respeta a nadie. Las páginas de estado son la fuente que los propios proveedores mantienen.
 - **Un formato común.** Cada lector traduce su fuente a lo mismo: estado, componentes afectados, incidencias y mantenimientos. La web no sabe nada de Statuspage ni de RSS.
 - **El peor dato manda.** El estado de un proveedor es el peor entre su indicador general, sus componentes, sus incidencias y sus mantenimientos en curso. Hay proveedores que tardan en mover el indicador general.
+- **El alcance cuenta.** Cloudflare tiene cientos de centros de datos y casi siempre alguno está redirigido. Si los componentes afectados son menos del 5 % (con al menos 20 componentes) y no hay ninguna incidencia de caída parcial o grave, el proveedor se queda como mucho en *degradado*. El cajón lo explica.
+- **Los avisos no son caídas.** Las incidencias que el proveedor publica sin impacto (Statuspage `impact: none`, como los avisos de seguridad) se muestran como *aviso* y no cambian el estado.
 - **Una fuente caída no rompe nada.** Si un proveedor no responde, se conservan sus últimos datos buenos y la web lo indica. Tras 3 horas sin respuesta pasa a *Sin datos* y se abre un issue.
 - **El historial es nuestro.** Ningún formato público da 90 días de historia de forma uniforme, así que uptime guarda un resumen diario con cada muestra.
 
@@ -184,7 +195,7 @@ git show origin/datos-prueba:data/estado.json | python3 -m json.tool | less
 ### Costes y límites
 
 - **GitHub Actions**: gratis en repositorios públicos. Cada ejecución tarda menos de un minuto.
-- **GitHub Pages**: gratis. La web pesa unos 30 KB, más los datos (unos 200 KB con 90 días de historial).
+- **GitHub Pages**: gratis. La web pesa unos 45 KB, más los datos (unos 200 KB con 90 días de historial).
 - **raw.githubusercontent.com**: guarda en caché unos 5 minutos; la web recarga cada 5.
 
 ### Qué hacer si…
@@ -204,8 +215,8 @@ git show origin/datos-prueba:data/estado.json | python3 -m json.tool | less
 ```
 uptime/
 ├── index.html                 Página única
-├── css/estilo.css             Estilos, modo claro y oscuro
-├── js/app.js                  Veredicto, filtros, tiras de 90 días y avisos
+├── css/estilo.css             Estilos: sala, racks, LED y terminales
+├── js/app.js                  Consola, journal, racks, cajones, filtros y avisos
 ├── data/proveedores.json      Qué se consulta y con qué formato
 ├── scripts/
 │   ├── actualizar.py          Descarga, normaliza y guarda el historial
