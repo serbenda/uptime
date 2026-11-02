@@ -11,6 +11,8 @@ Red Hat, Google Cloud, AWS, Cloudflare y más. Incidencias, mantenimientos y ca�
 [![Pruebas](https://github.com/serbenda/uptime/actions/workflows/pruebas.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/pruebas.yml)
 [![Apoya uptime en GitHub Sponsors](https://img.shields.io/badge/Apoya_uptime-GitHub_Sponsors-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/serbenda)
 
+**Castellano** · [English](README.en.md)
+
 </div>
 
 > [!NOTE]
@@ -23,6 +25,7 @@ Red Hat, Google Cloud, AWS, Cloudflare y más. Incidencias, mantenimientos y ca�
 - [Qué es](#qué-es)
 - [Lo que ves en la web](#lo-que-ves-en-la-web)
 - [Proveedores](#proveedores)
+- [Mapa de fallos](#mapa-de-fallos)
 - [Arquitectura](#arquitectura)
 - [Sistemas y DevOps](#sistemas-y-devops)
 - [Desarrollo](#desarrollo)
@@ -44,7 +47,9 @@ La web es un NOC (centro de operaciones de red): cada categoría es un rack y ca
 
 | Parte | Para qué sirve |
 |---|---|
+| **Idioma** | Castellano o inglés, según el navegador. Se cambia en la barra de la consola (`LANG= es_ES en_US`) o con `?lang=en`, y se recuerda. |
 | **Consola** | Una sesión de terminal que ejecuta `uptime` y `systemctl --failed`. Responde a la pregunta con `[  OK  ] Todo funciona.` o `[FAILED] GitHub y Azure tienen problemas.` y lista los servicios con fallos. El *load average* es real: la fracción de servicios con caída ahora, de media en 7 días y en 30 días. El favicon y el título de la pestaña también cambian de color. |
+| **Mapa de fallos** | Un mapamundi hecho de LED, con un punto encendido en cada lugar donde hay algo fallando: el color es el peor estado, el tamaño cuántos fallos hay y los graves laten. Al pasar por encima se ve quién falla; al pulsar, un `geoiplookup` con cada proveedor y qué componente o incidencia lo ha puesto ahí. Al lado, la lista de lugares y los proveedores con fallos sin ubicación concreta. |
 | **Incidencias abiertas** | Un `journalctl` con todas las incidencias activas, de más a menos graves. Cada línea se despliega con la fase, el último mensaje del proveedor y el enlace. |
 | **Racks** | Un rack por categoría (nube, desarrollo, red y CDN, colaboración, IA). Cada servidor tiene su LED (parpadea si hay fallos), su estado, una gráfica de 90 días y un display con la disponibilidad. |
 | **Cajón** | Al pulsar un servidor, se extrae y muestra su terminal: `status github` con estado, fuente, disponibilidad, componentes afectados, incidencias con su último mensaje y mantenimientos. |
@@ -52,6 +57,7 @@ La web es un NOC (centro de operaciones de red): cada categoría es un rack y ca
 | **Fijados** | La chincheta de cada servidor lo sube a un rack *Fijados*. Con *Avisarme si falla uno fijado*, el navegador avisa cuando empeora o se recupera, mientras la página esté abierta. Se guarda en tu navegador, sin cuentas. |
 | **Mantenimientos** | Un `crontab -l` con los mantenimientos en curso y los próximos, como mucho 3 por proveedor. |
 | **Últimos 30 días** | Un `last` con las incidencias vistas y su duración. |
+| **Fuente de alimentación** | El apartado de GitHub Sponsors, como la fuente de un servidor: ventilador, etiqueta de especificaciones con datos reales e interruptor basculante. |
 
 Todo se puede compartir con un enlace: `#p=github` abre directamente el cajón de GitHub.
 
@@ -99,6 +105,29 @@ Quay.io no aparece aparte porque su página de estado es la de Red Hat.
 
 ---
 
+## Mapa de fallos
+
+Las páginas de estado no traen coordenadas, pero sí nombres de sitios. [`actualizar.py`](scripts/actualizar.py) busca en el nombre de cada componente afectado y en el título de cada incidencia, de lo más concreto a lo más general:
+
+| Nivel | Ejemplo | Resultado |
+|---|---|---|
+| Región de nube | `us-east-1`, `europe-west1`, `West Europe`, `Middle East (UAE)` | La ciudad de la región |
+| Código IATA | `Houston, United States - (IAH)` (Cloudflare), `SG-SIN-2` (Linode), `AMS (Amsterdam)` | La ciudad |
+| Ciudad | `Performance Degradation in Mumbai and Chennai` | Las dos ciudades |
+| País | `Core services (Australia)`, `Indonesia and Singapore` | El centroide del país, salvo que ya haya una ciudad de ese país |
+| Zona | `Europe`, `APAC`, `LATAM` | Un punto representativo de la zona |
+
+Los avisos de seguridad no se ponen en el mapa. Lo que no se puede ubicar (por ejemplo, *GitHub Actions*) aparece como *sin ubicación concreta*.
+
+El diccionario está en [`data/geo/lugares_base.json`](data/geo/lugares_base.json): unas 240 ciudades de centros de datos con su código IATA, las regiones de AWS, Google Cloud y Azure, y las zonas. [`generar_mapa.py`](scripts/generar_mapa.py) lo junta con los países (fronteras de dominio público y nombres ISO 3166, los mismos de atalaya) y genera:
+
+- `data/lugares.json`: el diccionario compilado, con el centroide de cada país.
+- `data/mapa.json`: el mapamundi como matriz de LED (93 × 240 puntos, uno cada 1,5°, en hexadecimal: unos 6 KB).
+
+Si un fallo cae en un sitio que no está, se ubica en el país. Para añadir una ciudad o una región, se edita `lugares_base.json` y se ejecuta `python3 scripts/generar_mapa.py`.
+
+---
+
 ## Arquitectura
 
 ```mermaid
@@ -128,7 +157,7 @@ flowchart TB
 - **Un formato común.** Cada lector traduce su fuente a lo mismo: estado, componentes afectados, incidencias y mantenimientos. La web no sabe nada de Statuspage ni de RSS.
 - **El peor dato manda.** El estado de un proveedor es el peor entre su indicador general, sus componentes, sus incidencias y sus mantenimientos en curso. Hay proveedores que tardan en mover el indicador general.
 - **El alcance cuenta.** Cloudflare tiene cientos de centros de datos y casi siempre alguno está redirigido. Si los componentes afectados son menos del 5 % (con al menos 20 componentes) y no hay ninguna incidencia de caída parcial o grave, el proveedor se queda como mucho en *degradado*. El cajón lo explica.
-- **Los avisos no son caídas.** Las incidencias que el proveedor publica sin impacto (Statuspage `impact: none`, como los avisos de seguridad) se muestran como *aviso* y no cambian el estado.
+- **Los avisos no son caídas.** Las incidencias que el proveedor publica sin impacto (Statuspage `impact: none`) o cuyo título es un aviso de seguridad (`Security Advisory`, `CVE-…`) se muestran como *aviso* y no cambian el estado.
 - **Una fuente caída no rompe nada.** Si un proveedor no responde, se conservan sus últimos datos buenos y la web lo indica. Tras 3 horas sin respuesta pasa a *Sin datos* y se abre un issue.
 - **El historial es nuestro.** Ningún formato público da 90 días de historia de forma uniforme, así que uptime guarda un resumen diario con cada muestra.
 
@@ -195,7 +224,7 @@ git show origin/datos-prueba:data/estado.json | python3 -m json.tool | less
 ### Costes y límites
 
 - **GitHub Actions**: gratis en repositorios públicos. Cada ejecución tarda menos de un minuto.
-- **GitHub Pages**: gratis. La web pesa unos 45 KB, más los datos (unos 200 KB con 90 días de historial).
+- **GitHub Pages**: gratis. La web pesa unos 85 KB con el mapa, más los datos (unos 250 KB con 90 días de historial).
 - **raw.githubusercontent.com**: guarda en caché unos 5 minutos; la web recarga cada 5.
 
 ### Qué hacer si…
@@ -215,11 +244,18 @@ git show origin/datos-prueba:data/estado.json | python3 -m json.tool | less
 ```
 uptime/
 ├── index.html                 Página única
-├── css/estilo.css             Estilos: sala, racks, LED y terminales
-├── js/app.js                  Consola, journal, racks, cajones, filtros y avisos
-├── data/proveedores.json      Qué se consulta y con qué formato
+├── css/estilo.css             Estilos: sala, racks, LED, mapa y terminales
+├── js/
+│   ├── i18n.js                Textos en castellano e inglés
+│   └── app.js                 Consola, mapa, journal, racks, cajones, filtros y avisos
+├── data/
+│   ├── proveedores.json       Qué se consulta y con qué formato
+│   ├── mapa.json              Mapamundi como matriz de LED (generado)
+│   ├── lugares.json           Diccionario geográfico compilado (generado)
+│   └── geo/                   Fuentes del mapa: fronteras, países y lugares_base.json
 ├── scripts/
-│   ├── actualizar.py          Descarga, normaliza y guarda el historial
+│   ├── actualizar.py          Descarga, normaliza, ubica y guarda el historial
+│   ├── generar_mapa.py        Genera mapa.json y lugares.json a partir de data/geo/
 │   └── salud.py               Informe de fuentes caídas para el issue
 └── tests/test_actualizar.py   Pruebas con respuestas de ejemplo de cada formato
 ```
@@ -246,7 +282,7 @@ Para un formato nuevo: una función `procesar_<tipo>(datos, prov)` en `actualiza
 ### Convenciones
 
 - Python 3.12, solo biblioteca estándar. JavaScript sin frameworks ni compilación.
-- Todo en castellano: código, comentarios, commits y textos de la web. Los mensajes de los proveedores se muestran tal cual, en inglés.
+- Código, comentarios y commits en castellano. La web está en castellano e inglés: cada texto vive en [`js/i18n.js`](js/i18n.js) con las dos versiones, y las frases con datos son funciones para que cada idioma ordene las palabras a su manera. Los mensajes de los proveedores se muestran tal cual, en inglés.
 - Se trabaja en `development`; a `main` solo se llega por PR.
 
 ---
@@ -257,7 +293,7 @@ Todos en la rama `datos`, carpeta `data/`.
 
 | Fichero | Contenido |
 |---|---|
-| `estado.json` | Fecha de actualización, resumen y, por proveedor: estado, componentes afectados, incidencias abiertas, mantenimientos y estado de la fuente (`ok`, `error`, `fallos_seguidos`, `ultimo_ok`). |
+| `estado.json` | Fecha de actualización, resumen y, por proveedor: estado, componentes afectados, incidencias abiertas, mantenimientos, puntos del mapa (`lugares`, con coordenadas, peor nivel y ejemplos; `sin_ubicacion`, lo que no se pudo ubicar) y estado de la fuente (`ok`, `error`, `fallos_seguidos`, `ultimo_ok`). |
 | `historial.json` | Por proveedor y día, 90 días: muestras (`m`), muestras con caída parcial o grave (`c`) y peor estado del día (`peor`). Disponibilidad = 1 − c/m. |
 | `incidencias.json` | Incidencias vistas en los últimos 30 días: proveedor, título, peor impacto, inicio, fin y enlace. Una incidencia se cierra cuando deja de aparecer en la página del proveedor. |
 
@@ -268,8 +304,8 @@ Todos en la rama `datos`, carpeta `data/`.
 - [ ] Microsoft 365 a través de Microsoft Graph (requiere registrar una aplicación en un tenant).
 - [ ] Más proveedores: Oracle Cloud, IBM Cloud, Salesforce, Fastly, Datadog, Sentry.
 - [ ] Feed RSS propio con las incidencias de todos los proveedores.
-- [ ] Avisos por Telegram o correo para los vigilados, sin tener la página abierta.
-- [ ] Vista de correlación: varios proveedores cayendo a la vez suele señalar a un tercero común.
+- [ ] Avisos por Telegram o correo para los fijados, sin tener la página abierta.
+- [ ] Vista de correlación: varios proveedores cayendo a la vez en el mismo sitio suele señalar a un tercero común (un cable, un centro de datos compartido).
 
 ## Apoya el proyecto
 

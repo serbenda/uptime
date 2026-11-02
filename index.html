@@ -6,12 +6,14 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0F151B">
   <title>uptime</title>
-  <meta name="description" content="¿Está caído o soy yo? Estado de GitHub, Microsoft, Red Hat, Google Cloud, AWS y otros servicios en un solo panel.">
+  <meta name="description" id="descripcion" content="¿Está caído o soy yo? Estado de GitHub, Microsoft, Red Hat, Google Cloud, AWS y otros servicios en un solo panel.">
+  <link rel="alternate" hreflang="es" href="https://bendi.dev/uptime/?lang=es">
+  <link rel="alternate" hreflang="en" href="https://bendi.dev/uptime/?lang=en">
   <link rel="icon" id="favicon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='20' rx='3' fill='%23202A34'/%3E%3Ccircle cx='9' cy='16' r='4' fill='%2343D17F'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/estilo.css?v=2">
+  <link rel="stylesheet" href="css/estilo.css?v=3">
   <meta name="uptime-datos" content="https://raw.githubusercontent.com/serbenda/uptime/datos/data/">
 </head>
 <body>
@@ -21,7 +23,12 @@
     <section class="consola" aria-labelledby="veredicto">
       <div class="consola-barra">
         <span class="consola-titulo">bendi@noc: ~</span>
-        <span class="consola-estado" id="actualizado">conectando…</span>
+        <div class="idioma" role="group" data-i18n-aria="idioma" aria-label="Idioma">
+          <span class="idioma-var" aria-hidden="true">LANG=</span>
+          <button type="button" data-idioma="es" aria-pressed="true" lang="es">es_ES</button>
+          <button type="button" data-idioma="en" aria-pressed="false" lang="en">en_US</button>
+        </div>
+        <span class="consola-estado" id="actualizado" data-i18n="conectando">conectando…</span>
       </div>
       <div class="consola-cuerpo" id="consola">
         <p class="linea"><span class="prompt">bendi@noc:~$</span> uptime</p>
@@ -29,7 +36,7 @@
         <p class="linea"><span class="prompt">bendi@noc:~$</span> <span id="orden-estado">systemctl status proveedores</span></p>
         <h1 class="veredicto" id="veredicto" data-nivel="desconocido">
           <span class="marca-systemd" id="marca">[ .... ]</span>
-          <span id="titular">Comprobando servicios…</span>
+          <span id="titular" data-i18n="comprobando">Comprobando servicios…</span>
         </h1>
         <p class="linea salida tenue" id="subtitular"></p>
         <ul class="fallos" id="fallos"></ul>
@@ -37,10 +44,35 @@
       </div>
     </section>
 
+    <!-- Mapa de fallos: el mundo hecho de LED -->
+    <section class="panel" id="bloque-mapa" aria-labelledby="t-mapa">
+      <header class="panel-cabecera">
+        <h2 id="t-mapa" data-i18n="t_mapa">Mapa de fallos</h2>
+        <code class="panel-orden" data-i18n="mapa_orden">geoiplookup --fallos</code>
+      </header>
+      <div class="radar">
+        <div class="radar-pantalla" id="pantalla">
+          <svg class="mapa" id="mapa" viewBox="-1 -1 242 95" preserveAspectRatio="xMidYMid meet" role="group" data-i18n-aria="mapa_aria" aria-label="Mapa del mundo con los fallos ubicados">
+            <g id="mapa-reticula" aria-hidden="true"></g>
+            <path id="mapa-tierra" aria-hidden="true"></path>
+            <g id="mapa-puntos"></g>
+          </svg>
+          <div class="radar-tip" id="tip" hidden></div>
+          <span class="radar-coord" id="coord" aria-hidden="true">--.--°N --.--°E</span>
+        </div>
+        <aside class="radar-lista" aria-live="polite">
+          <div id="lugar-detalle" hidden></div>
+          <p class="radar-resumen" id="lugares-resumen"></p>
+          <ol class="lugares" id="lugares"></ol>
+          <p class="radar-global" id="lugares-global" hidden></p>
+        </aside>
+      </div>
+    </section>
+
     <!-- Incidencias abiertas, como un journal en vivo -->
     <section class="panel" id="bloque-activas" hidden aria-labelledby="t-activas">
       <header class="panel-cabecera">
-        <h2 id="t-activas">Incidencias abiertas</h2>
+        <h2 id="t-activas" data-i18n="t_activas">Incidencias abiertas</h2>
         <code class="panel-orden">journalctl -f -p warning</code>
       </header>
       <ol class="journal" id="activas"></ol>
@@ -49,31 +81,24 @@
     <!-- Racks -->
     <section aria-labelledby="t-racks">
       <header class="panel-cabecera">
-        <h2 id="t-racks">Servicios</h2>
-        <button type="button" class="boton" id="avisos" hidden>Avisarme si falla uno fijado</button>
+        <h2 id="t-racks" data-i18n="t_servicios">Servicios</h2>
+        <button type="button" class="boton" id="avisos" hidden data-i18n="avisos">Avisarme si falla uno fijado</button>
       </header>
 
       <form class="filtro" id="filtro" role="search" onsubmit="return false">
         <label class="filtro-busca">
           <span class="prompt" aria-hidden="true">$ grep -i</span>
-          <span class="oculto">Buscar un servicio</span>
-          <input id="buscar" type="search" placeholder="servicio" autocomplete="off" spellcheck="false">
+          <span class="oculto" data-i18n="buscar">Buscar un servicio</span>
+          <input id="buscar" type="search" placeholder="servicio" data-i18n-ph="buscar_ph" autocomplete="off" spellcheck="false">
         </label>
-        <div class="filtro-flags" id="categorias" role="group" aria-label="Rack"></div>
-        <label class="flag interruptor"><input type="checkbox" id="solo-problemas"><span>--solo-fallos</span></label>
+        <div class="filtro-flags" id="categorias" role="group" data-i18n-aria="rack" aria-label="Rack"></div>
+        <label class="flag interruptor"><input type="checkbox" id="solo-problemas"><span data-i18n="solo_fallos">--solo-fallos</span></label>
       </form>
 
       <div class="racks" id="racks"></div>
 
-      <dl class="leyenda" aria-label="Leyenda de LED">
-        <div><dt><span class="led" data-nivel="operativo"></span></dt><dd>operativo</dd></div>
-        <div><dt><span class="led" data-nivel="mantenimiento"></span></dt><dd>mantenimiento</dd></div>
-        <div><dt><span class="led" data-nivel="degradado"></span></dt><dd>degradado</dd></div>
-        <div><dt><span class="led" data-nivel="parcial"></span></dt><dd>caída parcial</dd></div>
-        <div><dt><span class="led" data-nivel="grave"></span></dt><dd>caída grave</dd></div>
-        <div><dt><span class="led" data-nivel="desconocido"></span></dt><dd>sin datos</dd></div>
-      </dl>
-      <p class="nota">
+      <dl class="leyenda" id="leyenda" data-i18n-aria="leyenda" aria-label="Leyenda de LED"></dl>
+      <p class="nota" data-i18n="nota">
         Cada servidor muestra 90 días: una barra por día, más alta cuanto peor fue. El porcentaje es el tiempo sin caída
         parcial ni grave, según las comprobaciones cada 10 minutos.
       </p>
@@ -82,7 +107,7 @@
     <div class="pareja">
       <section class="panel" id="bloque-mantenimientos" hidden aria-labelledby="t-mant">
         <header class="panel-cabecera">
-          <h2 id="t-mant">Mantenimientos</h2>
+          <h2 id="t-mant" data-i18n="t_mant">Mantenimientos</h2>
           <code class="panel-orden">crontab -l</code>
         </header>
         <ol class="tabla" id="mantenimientos"></ol>
@@ -90,19 +115,39 @@
 
       <section class="panel" id="bloque-recientes" hidden aria-labelledby="t-hist">
         <header class="panel-cabecera">
-          <h2 id="t-hist">Últimos 30 días</h2>
+          <h2 id="t-hist" data-i18n="t_hist">Últimos 30 días</h2>
           <code class="panel-orden">last -30d</code>
         </header>
         <ol class="tabla" id="recientes"></ol>
       </section>
     </div>
+
+    <!-- Fuente de alimentación: GitHub Sponsors -->
+    <section class="psu" aria-labelledby="t-psu">
+      <div class="psu-frontal">
+        <div class="psu-ventilador" aria-hidden="true"><span class="psu-aspas"></span></div>
+        <div class="psu-cuerpo">
+          <p class="psu-modelo"><span class="led" data-nivel="mantenimiento" id="psu-led"></span> PSU-1 <span class="psu-reposo" data-i18n="psu_reposo">en reposo, esperando corriente</span></p>
+          <h2 id="t-psu" data-i18n="psu_titulo">Fuente de alimentación</h2>
+          <p class="psu-texto" data-i18n="psu_texto">uptime no tiene servidores, anuncios ni rastreo.</p>
+        </div>
+        <dl class="psu-etiqueta">
+          <div><dt data-i18n="psu_entrada">ENTRADA</dt><dd>GitHub Sponsors</dd></div>
+          <div><dt data-i18n="psu_salida">SALIDA</dt><dd id="psu-salida">—</dd></div>
+          <div><dt data-i18n="psu_coste">COSTE</dt><dd data-i18n="psu_coste_valor">0 € en servidores</dd></div>
+        </dl>
+        <a class="psu-interruptor" href="https://github.com/sponsors/serbenda" target="_blank" rel="noopener">
+          <span class="psu-balancin" aria-hidden="true"><span>I</span><span>O</span></span>
+          <span class="psu-accion"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v6M4.6 3.6a5.5 5.5 0 1 0 6.8 0"/></svg><span data-i18n="psu_boton">Patrocinar en GitHub</span></span>
+        </a>
+      </div>
+    </section>
   </main>
 
   <footer class="pie">
-    <p>
+    <p data-i18n="pie">
       uptime lee cada 10 minutos las páginas de estado oficiales de cada proveedor: si un proveedor no publica un problema,
-      aquí tampoco aparece. Código en <a href="https://github.com/serbenda/uptime">github.com/serbenda/uptime</a>.
-      <a href="https://github.com/sponsors/serbenda">Apoya el proyecto</a>.
+      aquí tampoco aparece.
     </p>
   </footer>
 
@@ -119,13 +164,14 @@
         <span class="lcd"></span>
         <button type="button" class="fijar" aria-pressed="false">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 1.5h6M6 1.5v4.2L3.8 8.4v1.1h8.4V8.4L10 5.7V1.5M8 9.5v5"/></svg>
-          <span class="oculto">Fijar arriba</span>
+          <span class="oculto fijar-texto"></span>
         </button>
       </div>
       <div class="cajon" hidden></div>
     </article>
   </template>
 
-  <script src="js/app.js?v=2"></script>
+  <script src="js/i18n.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>
