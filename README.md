@@ -11,10 +11,10 @@ Real-time status of the IT services we rely on every day: GitHub, Microsoft Azur
 Google Cloud, AWS, Cloudflare and 21 more. Incidents, maintenance and outages in one NOC,<br>
 with a world map of failures and a terminal you can type into.
 
-**[bendi.dev/uptime](https://bendi.dev/uptime)**
+**[uptime.bendi.dev](https://uptime.bendi.dev)**
 
-[![Update data](https://github.com/serbenda/uptime/actions/workflows/actualizar.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/actualizar.yml)
-[![Tests](https://github.com/serbenda/uptime/actions/workflows/pruebas.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/pruebas.yml)
+[![Update data](https://github.com/serbenda/uptime/actions/workflows/update-data.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/update-data.yml)
+[![Tests](https://github.com/serbenda/uptime/actions/workflows/tests.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/tests.yml)
 [![Sponsor uptime on GitHub Sponsors](https://img.shields.io/badge/Sponsor_uptime-GitHub_Sponsors-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/serbenda)
 <br>
 ![27 providers](https://img.shields.io/badge/providers-27-43D17F?style=flat-square&labelColor=18212A)
@@ -118,7 +118,9 @@ The site imitates a NOC, and the metaphor isn't just decoration: every piece of 
 
 ### The console
 
-The first thing you see is a terminal session that has already run two commands:
+Above it sits the logo, and it's live: the LED that dots the **i** takes the colour of the worst status right now, green when everything works and red during a major outage. Next to it, the tagline, *Is it down, or is it just me?*
+
+Below it, a terminal session that has already run two commands:
 
 - **`uptime`** prints a line like the real command: time, days of history, number of services, how many are failing and a *load average*. The load average is real: the share of services with a partial or major outage right now, averaged over the last 7 days and over the last 30. Hover over it for an explanation.
 - **`systemctl --failed`** (or `systemctl status proveedores` when all is well) answers the question with systemd's boot marker: a green `[  OK  ] All systems operational.` or a red `[FAILED] GitHub and Azure are having problems.` With more than three services down it's summarised: `5 services are having problems.`
@@ -478,7 +480,7 @@ stateDiagram-v2
   Failing --> Failing: fewer than 18 failures in a row<br/>(its last good data is kept)
   Failing --> NoData: 18 failures in a row (3 h)<br/>or never responded
   NoData --> Responding: responds again
-  note right of NoData: the issue «Fuentes de datos caídas»<br/>is opened or commented on
+  note right of NoData: the issue «Data sources down»<br/>is opened or commented on
 ```
 
 - A provider that doesn't respond **doesn't break the others**: each one is fetched separately, and any error ends up on its own card.
@@ -592,8 +594,8 @@ flowchart TB
   end
 
   Datos[("datos branch<br/>estado.json<br/>historial.json<br/>incidencias.json")]
-  Pages["GitHub Pages<br/>bendi.dev/uptime"]
-  Issue["Issue<br/>«Fuentes de datos caídas»"]
+  Pages["GitHub Pages<br/>uptime.bendi.dev"]
+  Issue["Issue<br/>«Data sources down»"]
   Nav["Browser"]
 
   Fuentes --> A1
@@ -679,8 +681,8 @@ flowchart LR
 
 | Workflow | When | What it does | Permissions |
 |---|---|---|---|
-| [`actualizar.yml`](.github/workflows/actualizar.yml) (*Actualizar datos*, "update data") | Every 10 minutes (`3,13,23,33,43,53 * * * *`); when changes to `scripts/`, `data/proveedores.json`, `data/lugares.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, queries the sources, publishes to `datos` and checks source health | `contents: write`, `issues: write` |
-| [`pruebas.yml`](.github/workflows/pruebas.yml) (*Pruebas*, "tests") | On every PR and every push to `development` | `python -m unittest discover -s tests -v` | Defaults |
+| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`7,17,27,37,47,57 * * * *`); when changes to `scripts/`, `data/proveedores.json`, `data/lugares.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `datos` and opens an issue if a source has been down for a while | `contents: write`, `issues: write` |
+| [`tests.yml`](.github/workflows/tests.yml) (*Tests*) | On every PR and every push to `development` | `python -m unittest discover -s tests -v` | Defaults |
 | `pages-build-deployment` | When `main` changes | GitHub Pages deployment | GitHub's |
 
 The cron minute is offset from the top of the hour, which is when GitHub is busiest and most likely to delay scheduled runs.
@@ -711,10 +713,11 @@ gitGraph
 ### Setting it up
 
 1. Create the repository and push `main` with the code.
-2. Settings → Pages → *Deploy from a branch* → `main`, folder `/` (root). With the account's custom domain, the site lives at `bendi.dev/uptime`.
-3. Actions → *Actualizar datos* → *Run workflow*, to create the `datos` branch without waiting for the cron.
-4. Check that the site loads and the console bar says `updated … ago`.
-5. If you protect branches: protect `main` and `development`, and only allow changes to `main` through PRs. The Action needs no special permissions on `datos`, which must not be protected.
+2. Settings → Pages → *Deploy from a branch* → `main`, folder `/` (root).
+3. Custom domain: the [`CNAME`](CNAME) file says `uptime.bendi.dev`. In DNS, a `CNAME` record from `uptime` to `serbenda.github.io` (with Cloudflare, set to *DNS only* so GitHub can issue the certificate); then, in Settings → Pages, tick *Enforce HTTPS*. Without a custom domain, the site lives at `serbenda.github.io/uptime`, or at `<user domain>/uptime` if the account's user site has one.
+4. Actions → *Update data* → *Run workflow*, to create the `datos` branch without waiting for the cron.
+5. Check that the site loads and the console bar says `updated … ago`.
+6. If you protect branches: protect `main` and `development`, and only allow changes to `main` through PRs. The Action needs no special permissions on `datos`, which must not be protected.
 
 No secrets or variables are needed: every source is public.
 
@@ -724,11 +727,11 @@ No secrets or variables are needed: every source is public.
 |---|---|
 | A provider doesn't respond | Its last good data is kept and its card says so |
 | A provider changes its format | It raises `FormatoInesperado` and is treated as that source being down, without breaking the rest |
-| A source is down for a long time | After 18 runs in a row (3 hours), `salud.py` opens or comments on the *Fuentes de datos caídas* ("data sources down") issue |
+| A source is down for a long time | After 18 runs in a row (3 hours), `salud.py` opens or comments on the *Data sources down* issue |
 | No source responds | Almost certainly the runner's network: the Action fails without publishing |
 | `datos` can't be read | The Action fails before publishing: it never overwrites the history with empty data |
 | Half-written files | Each file is written to a `.tmp` and then renamed |
-| Two runs at once | `concurrency: actualizar-datos` queues them |
+| Two runs at once | `concurrency: update-data` queues them |
 | GitHub's cron runs late or skips runs | The Action runs after every merge, can be run manually, and the site warns when data is more than 40 minutes old |
 | The browser mixes versions | CSS and JS links carry `?v=N`, bumped on every change |
 | Huge or odd responses | Text is stripped of HTML and trimmed (600 characters per message, 200 per title); at most 12 components and 80 points per provider |
@@ -736,7 +739,7 @@ No secrets or variables are needed: every source is public.
 
 ### Testing changes with real data without touching the site
 
-Actions → *Actualizar datos* → *Run workflow* → branch `development`, with **Publicar** ("publish") unchecked. The data is written to `datos-prueba`:
+Actions → *Update data* → *Run workflow* → branch `development`, with **publish** unticked. The data is written to `datos-prueba`:
 
 ```bash
 git fetch origin datos-prueba
@@ -745,17 +748,17 @@ git show origin/datos-prueba:data/estado.json | python3 -m json.tool | less
 
 ### What it writes to the log
 
-Every run leaves one line per provider in the Action's log (statuses are in Spanish there, since the data itself uses Spanish keys):
+Every run leaves one line per provider in the Action's log:
 
 ```
-[ok ] GitHub                   operativo     0 incidencias
-[ok ] Cloudflare               grave         0 incidencias
-[ERR] OpenAI                   desconocido   0 incidencias  TimeoutError: timed out
+[ok ] GitHub                   operational     0 incidents
+[ok ] Cloudflare               major outage    0 incidents
+[ERR] OpenAI                   no data         0 incidents  TimeoutError: timed out
 ```
 
-And `salud.py` prints either `Todas las fuentes responden.` ("all sources are responding") or the issue's table:
+And `salud.py` prints either `All sources are responding.` or the issue's table:
 
-| Proveedor | Error | Fallos seguidos | Último dato bueno |
+| Provider | Error | Failures in a row | Last good data |
 |---|---|---|---|
 | OpenAI | HTTP 503 | 18 | 2026-11-02T08:13:36Z |
 
@@ -772,9 +775,9 @@ And `salud.py` prints either `Todas las fuentes responden.` ("all sources are re
 
 | Symptom | What to check |
 |---|---|
-| The site says data is running late | Actions → *Actualizar datos*: are there recent runs? GitHub's cron sometimes skips runs; trigger it manually. |
-| There are only `push` and `workflow_dispatch` runs, never `schedule` | GitHub hasn't registered the cron, which sometimes happens with new repositories. Run the workflow manually once; if it still doesn't show up, change the cron minute in `actualizar.yml` and merge it into `main`. Also, GitHub disables scheduled workflows in repositories with no activity for 60 days: a commit re-enables them. |
-| The *Fuentes de datos caídas* issue appears | The issue says which provider and which error. If it's *formato inesperado* (unexpected format), its page has changed and its parser or `tipo` needs updating. If it's HTTP 404, its address may have changed. |
+| The site says data is running late | Actions → *Update data*: are there recent runs? GitHub's cron sometimes skips runs; trigger it manually. |
+| There are only `push` and `workflow_dispatch` runs, never `schedule` | GitHub hasn't registered the cron, which sometimes happens with new repositories. Run the workflow manually once; if it still doesn't show up, change the cron minute in `update-data.yml` and merge it into `main`. Also, GitHub disables scheduled workflows in repositories with no activity for 60 days: a commit re-enables them. |
+| The *Data sources down* issue appears | The issue says which provider and which error. If it's *formato inesperado* (unexpected format), its page has changed and its parser or `tipo` needs updating. If it's HTTP 404, its address may have changed. |
 | A provider's status doesn't match its website | Check its drawer: it may be the worst-signal rule (a component down with the indicator green) or the scope rule. |
 | The map shows no dots | Is anything failing? If so, and everything is under *no specific location*, the names contain no recognisable places. If a city is missing, add it to `lugares_base.json`. |
 | A dot sits in the middle of a country | Its city isn't in the gazetteer: add it with its IATA code. |
@@ -813,7 +816,7 @@ uptime/
 │   ├── logo/                     Logo, mark, favicon, social preview and the animated terminal
 │   └── screenshots/              Screenshots for this README
 └── .github/
-    ├── workflows/                actualizar.yml and pruebas.yml
+    ├── workflows/                update-data.yml and tests.yml
     └── FUNDING.yml               The repository's Sponsor button
 ```
 
@@ -964,7 +967,7 @@ To add a string, add the same key to both `es` and `en`. To add a language, copy
 
   | File | Use |
   |---|---|
-  | [`docs/logo/uptime-oscuro.svg`](docs/logo/uptime-oscuro.svg) | Logo for dark backgrounds |
+  | [`docs/logo/uptime-oscuro.svg`](docs/logo/uptime-oscuro.svg) | Logo for dark backgrounds. The site inlines it at the top, with both LEDs coloured by the worst status |
   | [`docs/logo/uptime-claro.svg`](docs/logo/uptime-claro.svg) | Logo for light backgrounds |
   | [`docs/logo/uptime-marca.svg`](docs/logo/uptime-marca.svg) | Square mark, for avatars |
   | [`docs/logo/uptime-favicon.svg`](docs/logo/uptime-favicon.svg) | Simplified mark for 16–32 px; on the site its LED takes the colour of the worst status |
