@@ -523,6 +523,7 @@ code, .mono { font-family: var(--mono); }
 .t-tabla { display: grid; gap: 0 18px; margin: 2px 0; }
 .t-tabla > * { white-space: pre-wrap; overflow-wrap: anywhere; }
 .t-cabecera { color: var(--apagado); }
+.t-fila-entera { grid-column: 1 / -1; margin-top: 6px; }
 .t-clave { color: var(--tenue); }
 .t-orden { color: var(--tinta); }
 .t-error { color: var(--grave); }
