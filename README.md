@@ -75,6 +75,7 @@ with a world map of failures and a terminal you can type into.
 7. [How failures are placed on the map](#how-failures-are-placed-on-the-map)
 8. [Architecture](#architecture)
 9. [Operations](#operations)
+   - [Workflows](#workflows) · [Triggering the runs](#triggering-the-runs) · [How the Actions fit together](#how-the-actions-fit-together) · [Setting it up](#setting-it-up) · [Troubleshooting](#troubleshooting)
 10. [Development](#development)
 11. [Data formats](#data-formats)
 12. [Security and privacy](#security-and-privacy)
@@ -93,7 +94,7 @@ with a world map of failures and a terminal you can type into.
 | **What is it?** | A single page that brings together the status of 27 services almost every tech team depends on: clouds, code forges, package registries, CDNs, collaboration tools and AI. |
 | **What is it for?** | Telling at a glance whether the problem is yours or the provider's, where it's failing and since when. |
 | **Where does the data come from?** | Each provider's official status page, read every 10 minutes. |
-| **What does it cost?** | Nothing. There are no servers: everything runs on GitHub Actions and GitHub Pages. |
+| **What does it cost?** | Nothing. There are no servers: everything runs on GitHub Actions and GitHub Pages, and a free [cron-job.org](https://cron-job.org) job starts the run every 10 minutes. |
 | **What does it need?** | Python 3.12 with no dependencies to collect the data, and a framework-free static page to show it. |
 | **What does it look like?** | A NOC (*Network Operations Center*): a console with a terminal, a world map made of LEDs, and one rack per category with one server per provider. |
 | **Which languages?** | The site is in English and Spanish, following your browser. |
@@ -579,7 +580,14 @@ Equirectangular, from 82° N to 56° S, cropping the poles (no data centres, and
 flowchart TB
   Sources["<b>27 official status pages</b><br/>Statuspage, status.io, Google, Azure,<br/>Azure DevOps, AWS, Slack"]
 
-  subgraph Actions["GitHub Actions, every 10 min"]
+  subgraph Triggers["What starts a run"]
+    direction LR
+    T1["cron-job.org<br/>every 10 min<br/>(REST API call)"]
+    T2["GitHub cron<br/>backup, best effort"]
+    T3["Merge into main<br/>or Run workflow"]
+  end
+
+  subgraph Actions["GitHub Actions: Update data"]
     direction LR
     A1["update.py<br/>fetches in parallel,<br/>normalises, places,<br/>keeps history"]
     A2["health.py<br/>watches the sources"]
@@ -598,6 +606,7 @@ flowchart TB
   Issue["Issue<br/>«Data sources down»"]
   Nav["Browser"]
 
+  Triggers --> A1
   Sources --> A1
   Conf --> A1
   Geo --> A1
@@ -608,17 +617,19 @@ flowchart TB
   Data -- raw.githubusercontent.com --> Nav
 ```
 
+Everything runs on GitHub: the collector in Actions, the site on Pages and the data on its own branch. The only piece outside GitHub is the **clock**. GitHub's own scheduler doesn't guarantee when, or even whether, a scheduled workflow runs, so a free external service, [cron-job.org](https://cron-job.org), calls GitHub's API every 10 minutes to start the run. It only gives the order: it never sees the code, the data or the status pages. See [Triggering the runs](#triggering-the-runs).
+
 ### One run, step by step
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant C as Cron, merge or manual
+  participant C as cron-job.org, cron, merge or manual
   participant A as Action
   participant D as data branch
   participant F as Status pages
   participant G as Issues
-  C->>A: triggers
+  C->>A: triggers (workflow_dispatch, schedule or push)
   A->>D: does it exist? (git ls-remote)
   alt exists
     A->>D: restores data/ (status, history, incidents)
@@ -666,6 +677,7 @@ flowchart LR
 | **The worst signal wins** | Some providers are slow to move their overall indicator | Trusting the overall indicator |
 | **Scope matters** | Without it, Cloudflare would always be red | Flagging an outage for any component |
 | **Data on a separate branch** | `main` only gets code changes through PRs; `data` is a single commit that gets replaced, so it never grows | Committing data to `main` every 10 minutes |
+| **An external clock** | GitHub's `schedule` is best effort: runs are delayed at busy times, skipped, and on this repository it never fired at all. A `workflow_dispatch` through the API starts within seconds | Relying only on GitHub's cron |
 | **raw.githubusercontent.com** | Data updates without redeploying Pages, and without CORS issues | Publishing the data through Pages |
 | **Our own history** | No public format offers 90 days of history consistently | Reading each provider's history |
 | **A hand-made gazetteer** | No runtime dependencies or geocoding services, and full control over ambiguous names | A geocoding API |
@@ -681,11 +693,137 @@ flowchart LR
 
 | Workflow | When | What it does | Permissions |
 |---|---|---|---|
-| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`3-59/10 * * * *`, that is :03, :13, :23…); when changes to `scripts/`, `data/providers.json`, `data/places.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `data`, and opens or closes the *Data sources down* issue | `contents: write`, `issues: write` |
+| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes, started by [cron-job.org](#triggering-the-runs) through `workflow_dispatch`; GitHub's own cron (`3-59/10 * * * *`) as a backup; when changes to `scripts/`, `data/providers.json`, `data/places.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `data`, and opens or closes the *Data sources down* issue | `contents: write`, `issues: write` |
 | [`tests.yml`](.github/workflows/tests.yml) (*Tests*) | On every PR to `main` | `python -m unittest discover -s tests -v`. Its *Unit tests* check is required: a PR can't be merged until it passes | Defaults |
 | `pages-build-deployment` | When `main` changes | GitHub Pages deployment | GitHub's |
 
-The cron minute is offset from the top of the hour, which is when GitHub is busiest and most likely to delay scheduled runs.
+GitHub's cron minute is offset from the top of the hour, which is when GitHub is busiest and most likely to delay scheduled runs. Even so, it's only a backup: the run every 10 minutes comes from cron-job.org.
+
+### Triggering the runs
+
+#### Why an external trigger
+
+A workflow can be started in four ways, and they're not equally reliable:
+
+| Trigger | Event | Reliable? |
+|---|---|---|
+| GitHub's cron | `schedule` | **No.** GitHub's documentation warns that scheduled runs can be delayed at busy times and some may be dropped; on new repositories they can take hours to start, and they're disabled after 60 days without activity. On this repository it never fired once |
+| A merge into `main` | `push` | Yes, but only when the collector, the config or the workflow changes |
+| *Run workflow* in the Actions tab | `workflow_dispatch` | Yes, within seconds, but someone has to click |
+| A call to GitHub's REST API | `workflow_dispatch` | Yes, within seconds. **This is what cron-job.org does every 10 minutes** |
+
+#### How it works
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant J as cron-job.org
+  participant API as GitHub API
+  participant A as Update data (Actions)
+  participant D as data branch
+  participant W as Site
+  loop every 10 minutes
+    J->>API: POST /repos/serbenda/uptime/actions/workflows/update-data.yml/dispatches<br/>Authorization: Bearer token · {"ref":"main"}
+    API-->>J: 204 No Content
+    API->>A: queues a workflow_dispatch run on main
+    A->>D: reads the status pages and publishes the data
+  end
+  W->>D: every 5 minutes, raw.githubusercontent.com
+```
+
+- cron-job.org sends one HTTP request and gets a `204`. That's all it does: the run itself happens in GitHub Actions, exactly as if someone had clicked *Run workflow*, with `publish` at its default (`true`).
+- The call is authenticated with a **fine-grained personal access token** that can only touch this repository's Actions. It's stored in cron-job.org, never in the repository.
+- If GitHub's own cron fires too, the two runs are queued by `concurrency: update-data` and simply run one after the other. Nothing breaks: the second one reads the status pages again.
+- If cron-job.org goes down, GitHub's cron (if it's working), merges and manual runs keep updating the data, and the site warns when the data is more than 40 minutes old.
+
+#### The token
+
+| Setting | Value |
+|---|---|
+| Type | Fine-grained personal access token (Settings → Developer settings → Personal access tokens → *Fine-grained tokens*) |
+| Name | `uptime-cron` |
+| Repository access | *Only select repositories* → `serbenda/uptime` |
+| Permissions | **Actions: Read and write**. GitHub adds *Metadata: Read-only*, which is mandatory. Nothing else |
+| Expiration | One year at most. Note the date: when it expires the calls return `401` and the data stops updating |
+
+**Creating it, step by step:**
+
+1. On GitHub, open **[github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)** (your avatar → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**).
+2. **Token name:** `uptime-cron`. **Description** (optional): `Triggers Update data every 10 minutes`.
+3. **Resource owner:** `serbenda`.
+4. **Expiration:** *Custom*, one year from today. Write the date down.
+5. **Repository access:** **Only select repositories** → `serbenda/uptime`.
+6. **Permissions** → **Repository permissions** → **Actions** → **Access: Read and write**. *Metadata: Read-only* is added automatically. Leave everything else, including *Account permissions*, at *No access*.
+7. Check the summary says *1 repository* and *Actions: read and write*, then **Generate token**.
+8. **Copy the token now** (`github_pat_…`, about 90 characters): GitHub only shows it once. Paste it straight into cron-job.org; don't save it in the repository or share it.
+
+With it you can start, view and cancel this repository's workflow runs, and nothing more: it can't read or change the code, the data, the settings or any other repository. Never use a *classic* token here: those reach every repository on the account.
+
+#### The cron-job.org job
+
+**Creating it, step by step:**
+
+1. Sign up for free at **[cron-job.org](https://cron-job.org)** and confirm your email.
+2. **Dashboard** → **Cronjobs** → **Create cronjob**.
+3. **Common** tab:
+   - **Title:** `uptime update-data`
+   - **URL:** `https://api.github.com/repos/serbenda/uptime/actions/workflows/update-data.yml/dispatches`
+   - **Execution schedule:** *Every 10 minutes*
+4. **Advanced** tab:
+   - **Requires HTTP authentication:** unticked.
+   - **Headers** → **Add header**, once per row:
+
+     | Key | Value |
+     |---|---|
+     | `Authorization` | `Bearer github_pat_…` (the word `Bearer`, one space, then the whole token, no quotes) |
+     | `Accept` | `application/vnd.github+json` |
+     | `X-GitHub-Api-Version` | `2022-11-28` |
+     | `Content-Type` | `application/json` |
+
+   - **Request method:** `POST`
+   - **Request body:** `{"ref":"main"}`
+5. **Notifications** tab: tick *Notify me when execution fails*.
+6. **Save**, then **⋯ → Test run** on the job. It must answer **204 No Content**, and a new `workflow_dispatch` run of *Update data* must appear in [Actions](https://github.com/serbenda/uptime/actions/workflows/update-data.yml).
+7. Make sure the job is **Enabled**. From then on its history shows a `204` every 10 minutes.
+
+In short, the job is:
+
+| Field | Value |
+|---|---|
+| Title | `uptime update-data` |
+| URL | `https://api.github.com/repos/serbenda/uptime/actions/workflows/update-data.yml/dispatches` |
+| Schedule | Every 10 minutes |
+| Request method | `POST` |
+| Headers | `Authorization: Bearer github_pat_…` · `Accept: application/vnd.github+json` · `X-GitHub-Api-Version: 2022-11-28` · `Content-Type: application/json` |
+| Request body | `{"ref":"main"}` |
+| *Requires HTTP authentication* | Unticked: the token goes in the header |
+| Notifications | *Notify me when execution fails* |
+
+The expected answer is **204 No Content**:
+
+| Answer | Meaning |
+|---|---|
+| `204` | The run was queued |
+| `401` | Wrong or expired token, or missing `Bearer ` in front of it |
+| `403` | The token lacks *Actions: Read and write* |
+| `404` | Wrong URL, or the token isn't scoped to this repository |
+| `422` | The body isn't `{"ref":"main"}`, or the workflow no longer has `workflow_dispatch` |
+
+The same call can be made from any machine with `curl`, for example from a `crontab`:
+
+```cron
+*/10 * * * * curl -fsS -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $(cat $HOME/.uptime-token)" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/serbenda/uptime/actions/workflows/update-data.yml/dispatches -d '{"ref":"main"}'
+```
+
+cron-job.org is preferred because it doesn't depend on a machine being switched on, and it emails when a call fails.
+
+#### Renewing the token
+
+1. Before it expires: Settings → Developer settings → *Fine-grained tokens* → `uptime-cron` → **Regenerate token**, with a new expiration date.
+2. In cron-job.org, edit the job and paste the new token into the `Authorization` header (`Bearer ` + token).
+3. **Test run**: it should answer `204`, and a new `workflow_dispatch` run should appear in Actions.
+
+If the token ever leaks, delete it on the same page: the old value stops working immediately.
 
 ### How the Actions fit together
 
@@ -701,9 +839,10 @@ flowchart TB
   Merge --> Pages["pages-build-deployment<br/>publishes the site"]
   Merge --> Changed{"Did scripts/, providers.json,<br/>places.json or update-data.yml change?"}
   Changed -- yes --> Update
-  Changed -- no --> Wait["Wait for the next cron slot"]
+  Changed -- no --> Wait["Wait for the next call<br/>from cron-job.org"]
   Wait --> Update
-  Cron["Cron, every 10 min"] --> Update["Update data"]
+  Job["cron-job.org, every 10 min<br/>(workflow_dispatch via the API)"] --> Update["Update data"]
+  Cron["GitHub cron<br/>(backup)"] -.-> Update
   Manual["Run workflow (manual)"] --> Update
   Update --> Data[("data branch")]
   Update -. a source down for 3 h .-> Issue["Issue «Data sources down»"]
@@ -716,7 +855,7 @@ flowchart TB
 | PR to `main` | *Tests* (the *Unit tests* check, about 15 s) | Every parser, rule and file in the config is checked before anything reaches `main` |
 | Red tests | The PR can't be merged | `main` never gets code that breaks the collector |
 | Merge into `main` | *pages-build-deployment*, and *Update data* if the collector, the config, the gazetteer or the workflow changed | The site and the data reflect the new code within a minute |
-| Every 10 minutes | *Update data* | Fresh data, 90 days of history and incidents opened and closed |
+| Every 10 minutes | cron-job.org calls the API, which starts *Update data* (GitHub's cron, when it fires, does the same) | Fresh data, 90 days of history and incidents opened and closed |
 | Manually | *Update data* (with *publish* unticked, to `data-test`) | Testing with real data without touching the site |
 | A source down for 3 hours | *Update data* opens or comments on the *Data sources down* issue, and closes it when the source is back | Nobody has to keep an eye on the log |
 
@@ -741,7 +880,7 @@ gitGraph
 | Branch | Content | Written by |
 |---|---|---|
 | `development` | Where work happens. Protected against deletion and force pushes | People |
-| `main` | What Pages serves and what the cron runs. Only takes changes through PRs, and only once the tests pass | PRs from `development` |
+| `main` | What Pages serves and what every *Update data* run uses. Only takes changes through PRs, and only once the tests pass | PRs from `development` |
 | `data` | The Action's output: a single orphan commit replaced with a *force push* | `github-actions[bot]` |
 | `data-test` | Same as `data`, for test runs. The site doesn't read it | `github-actions[bot]` |
 
@@ -750,7 +889,7 @@ gitGraph
 1. Create the repository and push `main` with the code.
 2. Settings → Pages → *Deploy from a branch* → `main`, folder `/` (root).
 3. Custom domain: the [`CNAME`](CNAME) file says `uptime.bendi.dev`. In DNS, a `CNAME` record from `uptime` to `serbenda.github.io` (with Cloudflare, set to *DNS only* so GitHub can issue the certificate); then, in Settings → Pages, tick *Enforce HTTPS*. Without a custom domain, the site lives at `serbenda.github.io/uptime`, or at `<user domain>/uptime` if the account's user site has one.
-4. Actions → *Update data* → *Run workflow*, to create the `data` branch without waiting for the cron.
+4. Actions → *Update data* → *Run workflow*, to create the `data` branch straight away.
 5. Check that the site loads and the console bar says `updated … ago`.
 6. Protect the branches with two rulesets (Settings → Rules → Rulesets → *New branch ruleset*):
 
@@ -761,8 +900,9 @@ gitGraph
 
    Both with enforcement *Active* and no bypass list. From then on `main` only changes through a PR with green tests, and `development` can't be deleted or rewritten. Don't add rules for `data` or `data-test`: the Action force-pushes to them.
 7. Settings → General → *Social preview* → *Edit* → upload [`docs/logo/social.png`](docs/logo/social.png), so links to the repository show the logo on the LED map.
+8. Create the [`uptime-cron` token](#the-token) and the [cron-job.org job](#the-cron-joborg-job) that starts *Update data* every 10 minutes. Check that its *Test run* answers `204` and that a `workflow_dispatch` run appears in Actions.
 
-No secrets or variables are needed: every source is public.
+The repository itself needs no secrets or variables: every source is public. The only credential is the `uptime-cron` token, and it lives in cron-job.org.
 
 ### Reliability
 
@@ -775,7 +915,10 @@ No secrets or variables are needed: every source is public.
 | `data` can't be read | The Action fails before publishing: it never overwrites the history with empty data |
 | Half-written files | Each file is written to a `.tmp` and then renamed |
 | Two runs at once | `concurrency: update-data` queues them |
-| GitHub's cron runs late or skips runs | The Action runs after every merge, can be run manually, and the site warns when data is more than 40 minutes old |
+| GitHub's cron runs late, skips runs or never starts | The runs every 10 minutes come from cron-job.org through the API; GitHub's cron is only a backup |
+| cron-job.org is down or its call fails | GitHub's cron (if it fires), merges and manual runs still update the data; cron-job.org emails about the failure, and the site warns when data is more than 40 minutes old |
+| The `uptime-cron` token expires or is revoked | The calls return `401` and cron-job.org emails about it; [renew it](#renewing-the-token) |
+| The token leaks | It can only start and cancel this repository's workflow runs; delete it and create a new one |
 | The browser mixes versions | CSS and JS links carry `?v=N`, bumped on every change |
 | Huge or odd responses | Text is stripped of HTML and trimmed (600 characters per message, 200 per title); at most 12 components and 80 points per provider |
 | raw.githubusercontent.com caching | About 5 minutes; the site requests data with a parameter that changes every minute and `cache: no-store` |
@@ -809,7 +952,8 @@ And `health.py` prints either `All sources are responding.` or the issue's table
 
 | Resource | Usage | Cost |
 |---|---|---|
-| GitHub Actions | About 144 runs a day, under a minute each | Free for public repositories |
+| GitHub Actions | About 144 runs a day (more if GitHub's cron also fires), under a minute each | Free for public repositories |
+| cron-job.org | 144 calls a day | Free |
 | GitHub Pages | About 90 KB of site, including the map | Free |
 | `data` branch | About 250 KB with 90 days of history; it doesn't grow, since it's a single commit | Free |
 | Requests to providers | 27 every 10 minutes, with a `User-Agent` that identifies the project | Status pages are public and meant for this |
@@ -818,8 +962,10 @@ And `health.py` prints either `All sources are responding.` or the issue's table
 
 | Symptom | What to check |
 |---|---|
-| The site says data is running late | Actions → *Update data*: are there recent runs? GitHub's cron sometimes skips runs; trigger it manually. |
-| There are only `push` and `workflow_dispatch` runs, never `schedule` | GitHub hasn't registered the cron, which sometimes happens with new repositories. Run the workflow manually once; if it still doesn't show up, change the cron minute in `update-data.yml` and merge it into `main`. Also, GitHub disables scheduled workflows in repositories with no activity for 60 days: a commit re-enables them. |
+| The site says data is running late | Actions → *Update data*: is there a `workflow_dispatch` run every 10 minutes? If not, check the job's history in cron-job.org. Meanwhile, *Run workflow* by hand. |
+| cron-job.org answers `401` | The token is wrong, expired or missing `Bearer ` in front: [renew it](#renewing-the-token). |
+| cron-job.org answers `403` or `404` | The token lacks *Actions: Read and write*, isn't scoped to `serbenda/uptime`, or the URL is wrong. See [the job's answers](#the-cron-joborg-job). |
+| There are only `push` and `workflow_dispatch` runs, never `schedule` | GitHub's cron isn't firing. It's expected and harmless: cron-job.org covers it. GitHub also disables scheduled workflows in repositories with no activity for 60 days; a commit re-enables them. |
 | The *Data sources down* issue appears | The issue says which provider and which error, and gets a new comment on every run while it lasts. It closes itself when every source responds again; you don't need to close it. If it's *unexpected format*, its page has changed and its parser or `type` needs updating. If it's HTTP 404, its address may have changed. |
 | A provider's status doesn't match its website | Check its drawer: it may be the worst-signal rule (a component down with the indicator green) or the scope rule. |
 | The map shows no dots | Is anything failing? If so, and everything is under *no specific location*, the names contain no recognisable places. If a city is missing, add it to `places_base.json`. |
@@ -1244,6 +1390,7 @@ Every read and write is wrapped in `try/catch`: if the browser won't store anyth
 - **External links** open with `rel="noopener"`.
 - **Notifications** are local: the tab itself generates them when it sees a change in the data. There's no *push* and no subscription.
 - **The Action** only has `contents: write` (to publish to `data`) and `issues: write` (to raise the alarm). It uses no secrets.
+- **The external trigger** uses a fine-grained token limited to this repository's Actions, stored only in cron-job.org. cron-job.org sends one request to GitHub's API and never sees the code, the data or the status pages.
 - **Polite requests**: 27 every 10 minutes, to public pages built for this, with a `User-Agent` that says who's asking.
 - **Third parties on the site**: fonts from Google Fonts, and data from `raw.githubusercontent.com`.
 
@@ -1267,10 +1414,13 @@ Because AWS is still publishing it: they're events for its Middle East regions (
 Because every sample measured so far had a partial or major outage open. With only a few days of history the number is very sensitive; with 90, it settles.
 
 **Is it real time?**
-Almost: data is updated every 10 minutes (if GitHub honours the cron) and the site reloads it every 5. A problem a provider publishes at 10:02 shows up by around 10:20 at the latest.
+Almost: data is updated every 10 minutes (cron-job.org starts the run) and the site reloads it every 5. A problem a provider publishes at 10:02 shows up by around 10:20 at the latest.
 
 **Why isn't Microsoft 365 included?**
 Because its status is only available through Microsoft Graph, with tenant credentials.
+
+**Why does it need cron-job.org if everything runs on GitHub?**
+Because GitHub's scheduler doesn't guarantee when, or whether, a scheduled workflow runs; on this repository it never ran at all. cron-job.org only acts as the clock: every 10 minutes it asks GitHub's API to start *Update data*, and the run itself happens in GitHub Actions.
 
 **Can I add a service?**
 Yes, if it has a public status page in one of the known formats: it's one line in `data/providers.json`. See [Adding a provider](#adding-a-provider).
@@ -1289,7 +1439,7 @@ English: file names, identifiers, comments, logs and data keys. The site speaks 
 ## Known limitations
 
 - **It only knows what gets published.** If a provider is slow to acknowledge an outage, so is uptime; if it never publishes it, it didn't happen.
-- **The granularity is 10 minutes**, and GitHub can delay or skip scheduled runs. A 5-minute outage between two samples may go unseen.
+- **The granularity is 10 minutes**, and it depends on an external clock (cron-job.org) and a token that expires once a year. A 5-minute outage between two samples may go unseen.
 - **The map depends on names.** An incident titled *Elevated errors for some customers* has nowhere to go, and a place missing from the gazetteer lands in the middle of its country.
 - **Cities with the same name resolve to the one in the gazetteer**: `Santiago` is Santiago de Chile, `Portland` is Portland, Oregon.
 - **Azure and AWS give little detail**: Azure only publishes active incidents as RSS, without components; AWS, standalone events. Their statuses are coarser as a result (everything is a *partial outage*).
