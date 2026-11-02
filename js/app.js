@@ -234,6 +234,7 @@ function pintarConsola() {
 
   $("#orden-estado").textContent = malos.length ? "systemctl --failed" : "systemctl status proveedores";
   $("#veredicto").dataset.nivel = nivel;
+  $("#logo").dataset.nivel = nivel;      // el LED de la i del logo, del color del peor estado
   $("#marca").textContent = malos.length ? "[FAILED]" : "[  OK  ]";
   $("#titular").textContent = !malos.length ? T.todo_bien
     : malos.length <= 3 ? T.con_problemas(enumerar(malos.map((p) => p.nombre)), malos.length)

@@ -3,6 +3,7 @@
 
 Sale con código 1 e imprime un informe en Markdown si algún proveedor lleva
 varias ejecuciones seguidas sin responder; la Action lo usa para abrir un issue.
+El informe va en inglés, como el resto de lo que se ve en GitHub Actions.
 """
 
 import json
@@ -18,22 +19,22 @@ def main():
     try:
         proveedores = json.loads((SALIDA / "estado.json").read_text("utf-8")).get("proveedores", [])
     except (OSError, ValueError) as e:
-        print(f"No se ha podido leer `estado.json`: {e}")
+        print(f"Couldn't read `estado.json`: {e}")
         return 1
     caidas = [p for p in proveedores if (p.get("fuente") or {}).get("fallos_seguidos", 0) >= FALLOS_PARA_AVISAR]
     if not caidas:
-        print("Todas las fuentes responden.")
+        print("All sources are responding.")
         return 0
-    print(f"Estas fuentes llevan al menos {FALLOS_PARA_AVISAR} actualizaciones seguidas fallando. "
-          "La web las muestra como *sin datos*.\n")
-    print("| Proveedor | Error | Fallos seguidos | Último dato bueno |")
+    print(f"These sources have failed at least {FALLOS_PARA_AVISAR} updates in a row. "
+          "The site shows them as *no data*.\n")
+    print("| Provider | Error | Failures in a row | Last good data |")
     print("|---|---|---|---|")
     for p in caidas:
         f = p["fuente"]
-        print(f"| {p['nombre']} | {f.get('error') or '-'} | {f.get('fallos_seguidos')} | {f.get('ultimo_ok') or 'nunca'} |")
-    ejecucion = os.environ.get("ENLACE_EJECUCION")
+        print(f"| {p['nombre']} | {f.get('error') or '-'} | {f.get('fallos_seguidos')} | {f.get('ultimo_ok') or 'never'} |")
+    ejecucion = os.environ.get("RUN_URL")
     if ejecucion:
-        print(f"\nRegistro de la ejecución: {ejecucion}")
+        print(f"\nRun log: {ejecucion}")
     return 1
 
 

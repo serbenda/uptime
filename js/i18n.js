@@ -101,6 +101,7 @@ const IDIOMAS = {
     ver_servidor: "ver servidor",
 
     // estáticos (data-i18n)
+    lema: "¿Está caído o soy yo?",
     conectando: "conectando…",
     comprobando: "Comprobando servicios…",
     t_activas: "Incidencias abiertas",
@@ -282,6 +283,7 @@ const IDIOMAS = {
     punto_aria: (lugar, nivel, n) => `${lugar}: ${nivel}, ${n} ${n === 1 ? "provider" : "providers"}`,
     ver_servidor: "view server",
 
+    lema: "Is it down, or is it just me?",
     conectando: "connecting…",
     comprobando: "Checking services…",
     t_activas: "Open incidents",

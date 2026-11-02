@@ -705,10 +705,14 @@ def main():
         resultados = list(pool.map(consultar, lista))
 
     proveedores = [combinar(p, res, err, anterior) for p, (res, err) in zip(lista, resultados)]
+    # El registro de la Action va en inglés, como el resto de lo que se ve en GitHub Actions
+    en_ingles = {"operativo": "operational", "mantenimiento": "maintenance", "degradado": "degraded",
+                 "parcial": "partial outage", "grave": "major outage", "desconocido": "no data"}
     for p in proveedores:
         marca = "ok " if p["fuente"]["ok"] else "ERR"
-        print(f"[{marca}] {p['nombre']:<24} {p['estado']:<13} "
-              f"{len(p['incidencias'])} incidencias  {p['fuente'].get('error') or ''}")
+        n = len(p["incidencias"])
+        print(f"[{marca}] {p['nombre']:<24} {en_ingles.get(p['estado'], p['estado']):<15} "
+              f"{n} {'incident' if n == 1 else 'incidents'}  {p['fuente'].get('error') or ''}")
 
     con_problemas = [p for p in proveedores if RANGO.get(p["estado"], -1) >= RANGO["degradado"]]
     escribir("estado.json", {
@@ -726,7 +730,7 @@ def main():
     escribir("incidencias.json", actualizar_incidencias(leer("incidencias.json", {}), proveedores))
 
     if all(not p["fuente"]["ok"] for p in proveedores):
-        print("Ninguna fuente ha respondido: probablemente falla la red del runner.")
+        print("No source responded: the runner's network is probably down.")
         return 1
     return 0
 
