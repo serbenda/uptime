@@ -347,50 +347,5 @@ class TestPersistence(unittest.TestCase):
         self.assertIsNotNone(up.update_incidents(log, [clear])["x:1"]["ended"])
 
 
-class TestMigration(unittest.TestCase):
-    """Data written by older versions, with Spanish names, must survive the switch."""
-
-    def setUp(self):
-        self.out = Path(tempfile.mkdtemp())
-        self.patch = mock.patch.object(up, "OUTPUT", self.out)
-        self.patch.start()
-
-    def tearDown(self):
-        self.patch.stop()
-
-    def write_legacy(self, name, data):
-        (self.out / name).write_text(json.dumps(data), "utf-8")
-
-    def test_history(self):
-        self.write_legacy("historial.json", {"aws": {"2026-11-01": {"m": 144, "c": 12, "peor": "grave"}}})
-        self.assertEqual(up.read("history.json", {}), {"aws": {"2026-11-01": {"samples": 144, "down": 12, "worst": "major"}}})
-
-    def test_incidents(self):
-        self.write_legacy("incidencias.json", {"aws:e1": {"proveedor": "aws", "titulo": "T", "impacto": "aviso",
-                                                          "inicio": ISO, "visto": ISO, "fin": None, "enlace": "u"}})
-        self.assertEqual(up.read("incidents.json", {})["aws:e1"],
-                         {"provider": "aws", "title": "T", "impact": "advisory", "started": ISO, "seen": ISO,
-                          "ended": None, "link": "u"})
-
-    def test_status_keeps_source_health(self):
-        self.write_legacy("estado.json", {"actualizado": ISO, "proveedores": [{
-            "id": "x", "nombre": "X", "categoria": "desarrollo", "estado": "parcial", "resumen": "Down",
-            "componentes": [{"nombre": "API", "estado": "grave"}], "incidencias": [], "mantenimientos": [],
-            "lugares": [], "fuente": {"ok": False, "error": "HTTP 503", "fallos_seguidos": 5, "ultimo_ok": ISO}}]})
-        p = up.read("status.json", {})["providers"][0]
-        self.assertEqual((p["category"], p["status"], p["components"][0]["status"]), ("dev", "partial", "major"))
-        self.assertEqual(p["source"]["failures_in_a_row"], 5)
-        # and the next failure keeps counting from there
-        merged = up.merge(PROV, None, "HTTP 503", {"x": p})
-        self.assertEqual(merged["source"]["failures_in_a_row"], 6)
-
-    def test_new_files_win_and_legacy_ones_are_removed(self):
-        self.write_legacy("historial.json", {"aws": {}})
-        up.write("history.json", {"new": {}})
-        self.assertEqual(up.read("history.json", {}), {"new": {}})
-        up.remove_legacy_files()
-        self.assertFalse((self.out / "historial.json").exists())
-
-
 if __name__ == "__main__":
     unittest.main()

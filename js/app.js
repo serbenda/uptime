@@ -3,8 +3,6 @@
 // Data lives on the repo's `data` branch. Locally (or with ?local) it's read from data/.
 const LOCAL = ["localhost", "127.0.0.1"].includes(location.hostname) || new URLSearchParams(location.search).has("local");
 const BASE = LOCAL ? "data/" : document.querySelector('meta[name="uptime-data"]').content;
-// Until the first run after the rename creates the `data` branch, fall back to the old `datos` one
-const LEGACY_BASE = LOCAL ? null : BASE.replace("/uptime/data/", "/uptime/datos/");
 const REFRESH_MS = 5 * 60 * 1000;
 const STALE_MIN = 40;               // data older than this gets a warning
 const DAYS = 90;
@@ -39,7 +37,7 @@ const levelText = (n) => T.levels[n] ?? n;
 
 // ------------------------------------------------------------ helpers
 
-// keys: the current key first, then older names to fall back to
+// keys: a list from STORAGE in i18n.js
 function readLocal(keys, fallback) {
   try {
     for (const k of keys) {
@@ -158,23 +156,13 @@ async function readJSON(name, base = BASE) {
   return r.json();
 }
 
-async function readData(base) {
-  return Promise.all([
-    readJSON("status.json", base),
-    readJSON("history.json", base).catch(() => ({})),
-    readJSON("incidents.json", base).catch(() => ({})),
-  ]);
-}
-
 async function load() {
   try {
-    let data, history, log;
-    try {
-      [data, history, log] = await readData(BASE);
-    } catch (e) {
-      if (!LEGACY_BASE) throw e;
-      [data, history, log] = await readLegacy();
-    }
+    const [data, history, log] = await Promise.all([
+      readJSON("status.json"),
+      readJSON("history.json").catch(() => ({})),
+      readJSON("incidents.json").catch(() => ({})),
+    ]);
     const map = state.map ?? await readJSON("map.json", "data/").catch(() => null);
     notifyChanges(data);
     Object.assign(state, { data, history, log, map });
@@ -190,49 +178,6 @@ async function load() {
     }
     $("#updated").textContent = T.offline;
   }
-}
-
-// ------------------------------------------------------------ legacy data (Spanish keys, `datos` branch)
-// Only used in the few minutes between deploying this version and the first run that writes the `data` branch.
-
-const LEGACY_LEVEL = { operativo: "operational", mantenimiento: "maintenance", degradado: "degraded", parcial: "partial",
-  grave: "major", desconocido: "unknown", aviso: "advisory" };
-const LEGACY_CATEGORY = { nube: "cloud", desarrollo: "dev", red: "network", colaboracion: "collab", ia: "ai" };
-const LEGACY_PHASE = { Investigando: "Investigating", Identificado: "Identified", Vigilando: "Monitoring", Resuelto: "Resolved",
-  "Análisis posterior": "Postmortem", Programado: "Scheduled", "En curso": "In progress", Verificando: "Verifying", Completado: "Completed" };
-const lv = (n) => LEGACY_LEVEL[n] ?? n;
-
-async function readLegacy() {
-  const [s, h, r] = await Promise.all([
-    readJSON("estado.json", LEGACY_BASE),
-    readJSON("historial.json", LEGACY_BASE).catch(() => ({})),
-    readJSON("incidencias.json", LEGACY_BASE).catch(() => ({})),
-  ]);
-  const data = {
-    updated: s.actualizado,
-    categories: Object.fromEntries(Object.entries(s.categorias || {}).map(([k, v]) => [LEGACY_CATEGORY[k] ?? k, v])),
-    providers: s.proveedores.map((p) => ({
-      id: p.id, name: p.nombre, category: LEGACY_CATEGORY[p.categoria] ?? p.categoria, web: p.web,
-      status: lv(p.estado), description: p.resumen && !/^sin incidencias/i.test(p.resumen) ? p.resumen : "",
-      components: (p.componentes || []).map((c) => ({ name: c.nombre, status: lv(c.estado) })),
-      total_components: p.total_componentes, affected: p.afectados, limited_scope: p.alcance_limitado,
-      incidents: (p.incidencias || []).map((i) => ({ id: i.id, title: i.titulo, impact: lv(i.impacto),
-        phase: LEGACY_PHASE[i.fase] ?? i.fase, started: i.inicio, updated: i.actualizado, message: i.mensaje, link: i.enlace, affects: i.afecta })),
-      maintenance: (p.mantenimientos || []).map((m) => ({ id: m.id, title: m.titulo, phase: LEGACY_PHASE[m.fase] ?? m.fase,
-        in_progress: m.en_curso, start: m.inicio, end: m.fin, link: m.enlace })),
-      places: (p.lugares || []).map((l) => ({ id: l.id, en: l.en, es: l.es, lat: l.lat, lon: l.lon, country: l.pais,
-        country_en: l.pais_en, country_es: l.pais_es, level: lv(l.nivel), n: l.n,
-        examples: (l.ejemplos || []).map((x) => ({ t: x.t, level: lv(x.nivel) })) })),
-      unlocated: p.sin_ubicacion,
-      source: { checked: p.fuente?.comprobado, ok: p.fuente?.ok, error: p.fuente?.error,
-        failures_in_a_row: p.fuente?.fallos_seguidos, last_ok: p.fuente?.ultimo_ok },
-    })),
-  };
-  const history = Object.fromEntries(Object.entries(h).map(([id, days]) => [id, Object.fromEntries(
-    Object.entries(days).map(([d, v]) => [d, { samples: v.m, down: v.c, worst: lv(v.peor) }]))]));
-  const log = Object.fromEntries(Object.entries(r).map(([k, v]) => [k, { provider: v.proveedor, title: v.titulo,
-    impact: lv(v.impacto), started: v.inicio, seen: v.visto, ended: v.fin, link: v.enlace }]));
-  return [data, history, log];
 }
 
 // ------------------------------------------------------------ rendering
