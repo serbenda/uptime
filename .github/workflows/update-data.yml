@@ -81,18 +81,23 @@ jobs:
           git commit -q -m "Data $(date -u +'%Y-%m-%d %H:%M') UTC"
           git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
 
-      - name: Open an issue if a source has been down for a while
+      # Opens (or comments on) the issue while a source has been down for 3 hours,
+      # and closes it on its own once every source responds again
+      - name: Open or close the "Data sources down" issue
         if: env.PUBLISH == 'true'
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          title="Data sources down"
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
           if python scripts/salud.py > health.md; then
             cat health.md
+            if [ -n "$number" ]; then
+              gh issue close "$number" --comment "All sources are responding again. Closed automatically by $RUN_URL"
+            fi
             exit 0
           fi
           cat health.md
-          title="Data sources down"
-          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
           if [ -n "$number" ]; then
             gh issue comment "$number" --body-file health.md
           else

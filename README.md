@@ -480,7 +480,7 @@ stateDiagram-v2
   Failing --> Failing: fewer than 18 failures in a row<br/>(its last good data is kept)
   Failing --> NoData: 18 failures in a row (3 h)<br/>or never responded
   NoData --> Responding: responds again
-  note right of NoData: the issue «Data sources down»<br/>is opened or commented on
+  note right of NoData: the issue «Data sources down»<br/>is opened or commented on,<br/>and closed when it responds again
 ```
 
 - A provider that doesn't respond **doesn't break the others**: each one is fetched separately, and any error ends up on its own card.
@@ -681,7 +681,7 @@ flowchart LR
 
 | Workflow | When | What it does | Permissions |
 |---|---|---|---|
-| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`7,17,27,37,47,57 * * * *`); when changes to `scripts/`, `data/proveedores.json`, `data/lugares.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `datos` and opens an issue if a source has been down for a while | `contents: write`, `issues: write` |
+| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`7,17,27,37,47,57 * * * *`); when changes to `scripts/`, `data/proveedores.json`, `data/lugares.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `datos`, and opens or closes the *Data sources down* issue | `contents: write`, `issues: write` |
 | [`tests.yml`](.github/workflows/tests.yml) (*Tests*) | On every PR to `main` | `python -m unittest discover -s tests -v`. Its *Unit tests* check is required: a PR can't be merged until it passes | Defaults |
 | `pages-build-deployment` | When `main` changes | GitHub Pages deployment | GitHub's |
 
@@ -718,7 +718,7 @@ flowchart TB
 | Merge into `main` | *pages-build-deployment*, and *Update data* if the collector, the config, the gazetteer or the workflow changed | The site and the data reflect the new code within a minute |
 | Every 10 minutes | *Update data* | Fresh data, 90 days of history and incidents opened and closed |
 | Manually | *Update data* (with *publish* unticked, to `datos-prueba`) | Testing with real data without touching the site |
-| A source down for 3 hours | *Update data* opens or comments on the *Data sources down* issue | Nobody has to keep an eye on the log |
+| A source down for 3 hours | *Update data* opens or comments on the *Data sources down* issue, and closes it when the source is back | Nobody has to keep an eye on the log |
 
 The guarantee that red tests block a merge comes from a ruleset on `main` (see [Setting it up](#setting-it-up), step 6); the workflow alone only reports.
 
@@ -730,9 +730,9 @@ gitGraph
   branch development
   checkout development
   commit id: "change"
-  commit id: "tests pass"
+  commit id: "more work"
   checkout main
-  merge development id: "PR"
+  merge development id: "PR, tests green"
   branch datos
   checkout datos
   commit id: "data, replaced every 10 min"
@@ -740,7 +740,7 @@ gitGraph
 
 | Branch | Content | Written by |
 |---|---|---|
-| `development` | Where work happens | People |
+| `development` | Where work happens. Protected against deletion and force pushes | People |
 | `main` | What Pages serves and what the cron runs. Only takes changes through PRs, and only once the tests pass | PRs from `development` |
 | `datos` | The Action's output: a single orphan commit replaced with a *force push* | `github-actions[bot]` |
 | `datos-prueba` | Same as `datos`, for test runs. The site doesn't read it | `github-actions[bot]` |
@@ -752,7 +752,15 @@ gitGraph
 3. Custom domain: the [`CNAME`](CNAME) file says `uptime.bendi.dev`. In DNS, a `CNAME` record from `uptime` to `serbenda.github.io` (with Cloudflare, set to *DNS only* so GitHub can issue the certificate); then, in Settings → Pages, tick *Enforce HTTPS*. Without a custom domain, the site lives at `serbenda.github.io/uptime`, or at `<user domain>/uptime` if the account's user site has one.
 4. Actions → *Update data* → *Run workflow*, to create the `datos` branch without waiting for the cron.
 5. Check that the site loads and the console bar says `updated … ago`.
-6. Protect `main` with a ruleset (Settings → Rules → Rulesets → *New branch ruleset*): target `main`, enforcement *Active*, and tick *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals) and *Require status checks to pass* with the *Unit tests* check. From then on `main` only changes through a PR with green tests. Don't add rules for `datos`: the Action force-pushes to it.
+6. Protect the branches with two rulesets (Settings → Rules → Rulesets → *New branch ruleset*):
+
+   | Ruleset | Target | Rules |
+   |---|---|---|
+   | `main: PR with passing tests` | `main` (*Include default branch*) | *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals), *Require status checks to pass* with the *Unit tests* check |
+   | `development: no force push` | `development` (*Include by pattern*: `development`) | *Restrict deletions*, *Block force pushes* |
+
+   Both with enforcement *Active* and no bypass list. From then on `main` only changes through a PR with green tests, and `development` can't be deleted or rewritten. Don't add rules for `datos` or `datos-prueba`: the Action force-pushes to them.
+7. Settings → General → *Social preview* → *Edit* → upload [`docs/logo/uptime-social.png`](docs/logo/uptime-social.png), so links to the repository show the logo on the LED map.
 
 No secrets or variables are needed: every source is public.
 
@@ -762,7 +770,7 @@ No secrets or variables are needed: every source is public.
 |---|---|
 | A provider doesn't respond | Its last good data is kept and its card says so |
 | A provider changes its format | It raises `FormatoInesperado` and is treated as that source being down, without breaking the rest |
-| A source is down for a long time | After 18 runs in a row (3 hours), `salud.py` opens or comments on the *Data sources down* issue |
+| A source is down for a long time | After 18 runs in a row (3 hours), `salud.py` opens the *Data sources down* issue, or comments on it if it's already open. Once every source responds again, the Action closes it with a comment |
 | No source responds | Almost certainly the runner's network: the Action fails without publishing |
 | `datos` can't be read | The Action fails before publishing: it never overwrites the history with empty data |
 | Half-written files | Each file is written to a `.tmp` and then renamed |
@@ -812,7 +820,7 @@ And `salud.py` prints either `All sources are responding.` or the issue's table:
 |---|---|
 | The site says data is running late | Actions → *Update data*: are there recent runs? GitHub's cron sometimes skips runs; trigger it manually. |
 | There are only `push` and `workflow_dispatch` runs, never `schedule` | GitHub hasn't registered the cron, which sometimes happens with new repositories. Run the workflow manually once; if it still doesn't show up, change the cron minute in `update-data.yml` and merge it into `main`. Also, GitHub disables scheduled workflows in repositories with no activity for 60 days: a commit re-enables them. |
-| The *Data sources down* issue appears | The issue says which provider and which error. If it's *formato inesperado* (unexpected format), its page has changed and its parser or `tipo` needs updating. If it's HTTP 404, its address may have changed. |
+| The *Data sources down* issue appears | The issue says which provider and which error, and gets a new comment on every run while it lasts. It closes itself when every source responds again; you don't need to close it. If it's *formato inesperado* (unexpected format), its page has changed and its parser or `tipo` needs updating. If it's HTTP 404, its address may have changed. |
 | A provider's status doesn't match its website | Check its drawer: it may be the worst-signal rule (a component down with the indicator green) or the scope rule. |
 | The map shows no dots | Is anything failing? If so, and everything is under *no specific location*, the names contain no recognisable places. If a city is missing, add it to `lugares_base.json`. |
 | A dot sits in the middle of a country | Its city isn't in the gazetteer: add it with its IATA code. |
@@ -845,6 +853,8 @@ uptime/
 ├── scripts/
 │   ├── actualizar.py             Fetches, normalises, places and keeps the history
 │   ├── generar_mapa.py           Builds mapa.json and lugares.json from data/geo/
+│   ├── generar_marca.py          Builds the logo, mark, favicon and animated terminal in docs/logo/
+│   ├── capturas.py               Takes the README screenshots and the social preview (needs a browser)
 │   └── salud.py                  Report of failing sources, for the issue
 ├── tests/test_actualizar.py      Tests with sample responses for each format
 ├── docs/
@@ -872,6 +882,64 @@ The code is written in Spanish (identifiers, comments and commit messages), the 
 </details>
 
 There's no generated data on `main`: `estado.json`, `historial.json` and `incidencias.json` are in `.gitignore` and live on the `datos` branch.
+
+### Making a change, step by step
+
+Every change follows the same path, from `development` to the live site:
+
+```bash
+# 1. Start from the latest development
+git checkout development
+git pull
+
+# 2. Make the change, then run the tests
+python3 -m unittest discover -s tests -v
+
+# 3. Try it in the browser with real data (see Running it locally)
+python3 -m http.server 8000
+
+# 4. Commit and push to development (nothing runs on GitHub yet)
+git add -A
+git commit -m "What changes and why"
+git push origin development
+```
+
+5. On GitHub, open a PR from `development` to `main`. *Tests* runs and adds the *Unit tests* check.
+6. If it's red, fix it on `development` and push again: the PR updates itself and the check runs again. A red PR can't be merged.
+7. When it's green, merge it. *pages-build-deployment* publishes the site, and *Update data* runs straight away if the collector, the config, the gazetteer or the workflow changed.
+8. Check [uptime.bendi.dev](https://uptime.bendi.dev): the console bar should say `updated … ago`. If the change touched the data, also check the latest *Update data* run in Actions.
+
+Before committing, check this list against what you've changed:
+
+| If you changed… | Also do this |
+|---|---|
+| `css/` or `js/` | Bump the file's `?v=N` in `index.html`, so browsers don't mix versions |
+| A text on the site | Change it in both `es` and `en` in `js/i18n.js` |
+| `data/proveedores.json` | Nothing else: the tests check it and the next run picks it up |
+| `data/geo/` | `python3 scripts/generar_mapa.py`, and commit `data/mapa.json` and `data/lugares.json` too |
+| The collector's rules or a parser | Add or update a test in `tests/test_actualizar.py` |
+| The logo, the mark or the animated terminal | `python3 scripts/generar_marca.py` |
+| How the site looks | `python3 scripts/capturas.py`, so the README screenshots match |
+| A workflow | Its documentation in [Operations](#operations) |
+| Anything users or maintainers would notice | This README |
+
+### Regenerating the brand and the screenshots
+
+Everything in `docs/` can be rebuilt from the repository:
+
+```bash
+# Logo, mark, favicon and animated terminal (standard library only)
+python3 scripts/generar_marca.py
+
+# README screenshots and social preview: they need a browser, and look best with real data
+pip install playwright pillow
+playwright install chromium
+git fetch origin datos
+for f in estado historial incidencias; do git show origin/datos:data/$f.json > data/$f.json; done
+python3 scripts/capturas.py
+```
+
+`generar_marca.py` draws everything from code (the word is made of stroked paths, so no font is involved) and is deterministic: running it on an unchanged repository changes nothing. `capturas.py` serves the site locally, opens it in headless Chromium in English and Spanish, on desktop and mobile, types a few commands into the terminal, and saves every screenshot as WebP. It also renders the 1280 × 640 social preview with the LED map and the failures in your local `data/estado.json`. If the favicon changes, copy its drawing to the `<link rel="icon">` in `index.html` and to `pintarConsola()` in `js/app.js`, where its LED is coloured by status. After regenerating the social preview, upload it again under Settings → *Social preview*.
 
 ### Running it locally
 
@@ -1008,6 +1076,8 @@ To add a string, add the same key to both `es` and `en`. To add a language, copy
   | [`docs/logo/uptime-favicon.svg`](docs/logo/uptime-favicon.svg) | Simplified mark for 16–32 px; on the site its LED takes the colour of the worst status |
   | [`docs/logo/uptime-social.png`](docs/logo/uptime-social.png) | 1280 × 640 preview for links (Open Graph), with the LED map |
   | [`docs/logo/terminal.svg`](docs/logo/terminal.svg) | The animated terminal at the top of this README (CSS animation, respects reduced motion) |
+
+  The SVGs come from [`generar_marca.py`](scripts/generar_marca.py) and the PNG from [`capturas.py`](scripts/capturas.py): see [Regenerating the brand and the screenshots](#regenerating-the-brand-and-the-screenshots).
 
 - **Type**: [Archivo](https://fonts.google.com/specimen/Archivo), with variable width (narrow in the verdict and headings), for labels; [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) for anything that comes out of a terminal.
 - **Colour means something**: bright colours are reserved for LEDs and statuses; everything else is metal and ink.
