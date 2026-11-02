@@ -4,12 +4,16 @@ name: Update data
 # that gets replaced on every run). That way `main` only receives code changes through PRs.
 
 on:
+  # The run every 10 minutes is started from outside: cron-job.org calls the REST API
+  # (POST …/actions/workflows/update-data.yml/dispatches), which triggers workflow_dispatch.
+  # GitHub's own cron stays as a backup; it's best effort and may be delayed or skipped.
   schedule:
-    - cron: "3-59/10 * * * *"   # every 10 minutes (GitHub may delay or skip some)
+    - cron: "3-59/10 * * * *"
   # After every merge the data is rebuilt with the new code, without waiting for the next slot
   push:
     branches: [main]
     paths: ["scripts/**", "data/providers.json", "data/places.json", ".github/workflows/update-data.yml"]
+  # Manual runs and the cron-job.org calls
   workflow_dispatch:
     inputs:
       publish:
