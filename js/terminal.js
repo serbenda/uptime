@@ -86,6 +86,7 @@
         if (args.length > 1) return ORDENES.status(args.slice(1));
         return linea(led($("#veredicto").dataset.nivel, `● ${$("#marca").textContent.trim()} `), $("#titular").textContent);
       }
+      if (args[0] === "list-units" && !args.includes("--failed")) return ORDENES.services([]);
       if (args[0] !== "--failed" && args[0] !== "list-units") return error(T.term.falta(T.term.uso.systemctl));
       const malos = estado.datos.proveedores.filter(conFallos).sort((a, b) => RANGO[b.estado] - RANGO[a.estado]);
       if (malos.length) {
@@ -236,6 +237,47 @@
       if (!hay) linea(tenue(T.term.sin_grep));
     },
 
+    // Lo que vigila uptime: data/proveedores.json, el mismo fichero que lee el recolector
+    async services(args) {
+      if (!configuracion) {
+        try { configuracion = await (await fetch("data/proveedores.json", { cache: "no-cache" })).json(); }
+        catch { configuracion = { proveedores: [] }; }
+      }
+      const tipos = Object.fromEntries(configuracion.proveedores.map((c) => [c.id, c.tipo]));
+      const nombre = args.find((a) => !a.startsWith("-"));
+      let racks = Object.keys(estado.datos.categorias);
+      if (nombre) {
+        const id = rackDe(nombre);
+        if (!id) return error(T.term.rack_desconocido(nombre, racks.map((r) => T.flags[r].replace(/^--/, "")).join(" ")));
+        racks = [id];
+      }
+      const lista = estado.datos.proveedores;
+      linea(tenue(T.term.serv_cabecera(lista.length)));
+      // Una sola rejilla para que las columnas casen entre racks; el nombre del rack ocupa toda la fila
+      const rejilla = el("div", { class: "t-tabla", style: "grid-template-columns: max-content max-content max-content 1fr" },
+        ...T.term.cab_serv.map((c, i) => el("span", { class: "t-cabecera" }, i ? c : `  ${c}`)));
+      for (const id of racks) {
+        const ps = lista.filter((p) => p.categoria === id).sort((a, b) => a.id.localeCompare(b.id));
+        rejilla.append(el("span", { class: "t-fila-entera" },
+          el("b", { class: "t-carpeta" }, `[${T.flags[id].replace(/^--/, "")}]`), tenue(`  ${nombreCategoria(id)}, ${ps.length}`)));
+        for (const p of ps) {
+          rejilla.append(
+            el("span", {}, "  ", led(p.estado, "● "), enlace(p)),
+            el("span", {}, p.nombre),
+            tenue(tipos[p.id] ?? "?"),
+            el("a", { href: p.web, target: "_blank", rel: "noopener" }, host(p)));
+        }
+      }
+      sesion.append(rejilla);
+      linea(tenue(T.term.serv_pie));
+    },
+
+    cat(args) {
+      const ruta = args.join(" ");
+      if (/servicios\.conf|services\.conf|proveedores/.test(ruta)) return ORDENES.services([]);
+      error(ruta ? `cat: ${ruta}: ${T.term.no_fichero}` : T.term.falta(`cat ${candidatos(["cat", ""])[0]}`));
+    },
+
     neofetch() {
       const racks = Object.keys(estado.datos.categorias).map((id) => {
         const ps = estado.datos.proveedores.filter((p) => p.categoria === id);
@@ -310,10 +352,12 @@
   Object.assign(ORDENES, {
     ayuda: ORDENES.help, "?": ORDENES.help, cls: ORDENES.clear, logout: ORDENES.exit, quit: ORDENES.exit, salir: ORDENES.exit,
     cafe: ORDENES.coffee, "café": ORDENES.coffee, brew: ORDENES.coffee, hola: ORDENES.hello, hi: ORDENES.hello,
+    servicios: ORDENES.services, svc: ORDENES.services, providers: ORDENES.services, proveedores: ORDENES.services,
     dir: ORDENES.ls, ll: (a) => ORDENES.ls(["-l", ...a]), donate: ORDENES.sponsor, patrocinar: ORDENES.sponsor,
     fastfetch: ORDENES.neofetch, journal: ORDENES.journalctl, where: ORDENES.geoiplookup, top10: ORDENES.top, htop: ORDENES.top,
   });
 
+  let configuracion = null;
   const VISIBLES = Object.keys(T.term.desc);
 
   // ---------------------------------------------------------- ejecutar
@@ -349,7 +393,10 @@
     const nombre = orden.toLowerCase();
     const accion = Object.hasOwn(ORDENES, nombre) ? ORDENES[nombre] : null;
     if (accion) {
-      try { accion(args); } catch (e) { console.error(e); error(`${nombre}: ${e.message}`); }
+      try {
+        const r = accion(args);
+        if (r?.then) r.then(() => { recortar(); desplazar(); }, (e) => error(`${nombre}: ${e.message}`));
+      } catch (e) { console.error(e); error(`${nombre}: ${e.message}`); }
     } else {
       error(T.term.no_encontrada(orden));
       const cerca = VISIBLES.map((o) => [o, distancia(nombre, o)]).sort((a, b) => a[1] - b[1])[0];
@@ -382,6 +429,8 @@
     if (o === "ls") return Object.keys(estado.datos?.categorias ?? {}).map((id) => T.flags[id].replace(/^--/, "")).concat("-l");
     if (o === "lang") return Object.keys(IDIOMAS);
     if (o === "man") return VISIBLES;
+    if (o === "services" || o === "servicios") return Object.keys(estado.datos?.categorias ?? {}).map((id) => T.flags[id].replace(/^--/, ""));
+    if (o === "cat") return [T.html === "en" ? "/etc/uptime/services.conf" : "/etc/uptime/servicios.conf"];
     if (o === "geoiplookup") return lugaresActuales().map((g) => normalizar(nombreLugar(g.lugar)).replace(/\s+/g, "-"));
     return [];
   }
@@ -449,7 +498,7 @@
   // ---------------------------------------------------------- sugerencias bajo la línea de órdenes
 
   function pintarAtajos() {
-    const sugerencias = ["help", "systemctl --failed"];
+    const sugerencias = ["help", "services", "systemctl --failed"];
     const peor = estado.datos?.proveedores.filter(conFallos).sort((a, b) => RANGO[b.estado] - RANGO[a.estado])[0];
     sugerencias.push(`status ${peor?.id ?? "github"}`);
     const lugar = estado.datos && lugaresActuales()[0];
