@@ -681,7 +681,7 @@ flowchart LR
 
 | Workflow | When | What it does | Permissions |
 |---|---|---|---|
-| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`7,17,27,37,47,57 * * * *`); when changes to `scripts/`, `data/providers.json`, `data/places.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `data`, and opens or closes the *Data sources down* issue | `contents: write`, `issues: write` |
+| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`3-59/10 * * * *`, that is :03, :13, :23…); when changes to `scripts/`, `data/providers.json`, `data/places.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `data`, and opens or closes the *Data sources down* issue | `contents: write`, `issues: write` |
 | [`tests.yml`](.github/workflows/tests.yml) (*Tests*) | On every PR to `main` | `python -m unittest discover -s tests -v`. Its *Unit tests* check is required: a PR can't be merged until it passes | Defaults |
 | `pages-build-deployment` | When `main` changes | GitHub Pages deployment | GitHub's |
 

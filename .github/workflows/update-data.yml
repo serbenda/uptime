@@ -5,7 +5,7 @@ name: Update data
 
 on:
   schedule:
-    - cron: "7,17,27,37,47,57 * * * *"   # every 10 minutes (GitHub may delay or skip some)
+    - cron: "3-59/10 * * * *"   # every 10 minutes (GitHub may delay or skip some)
   # After every merge the data is rebuilt with the new code, without waiting for the next slot
   push:
     branches: [main]
