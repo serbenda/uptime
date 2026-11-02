@@ -113,6 +113,26 @@ class TestStatuspage(unittest.TestCase):
         with self.assertRaises(act.FormatoInesperado):
             act.procesar_statuspage({"page": {}}, PROV)
 
+    def test_alcance_limitado(self):
+        # 3 centros de datos caídos de 100: no es una caída global
+        comps = [{"name": f"PoP {n}", "status": "major_outage" if n < 3 else "operational"} for n in range(100)]
+        r = act.procesar_statuspage(statuspage(indicador="major", componentes=comps), PROV)
+        self.assertEqual(r["estado"], "degradado")
+        self.assertTrue(r["alcance_limitado"])
+        self.assertEqual(r["afectados"], 3)
+        # con una incidencia seria, sí cuenta entero
+        inc = [{"id": "i", "name": "Outage", "impact": "major", "status": "investigating"}]
+        r = act.procesar_statuspage(statuspage(indicador="major", componentes=comps, incidencias=inc), PROV)
+        self.assertEqual(r["estado"], "grave")
+        # pocos componentes: no se aplica el tope
+        r = act.procesar_statuspage(statuspage(componentes=[{"name": "API", "status": "major_outage"}]), PROV)
+        self.assertEqual(r["estado"], "grave")
+
+    def test_aviso_no_cambia_el_estado(self):
+        inc = [{"id": "cve", "name": "Customer Security Advisory: CVE-1", "impact": "none", "status": "investigating"}]
+        r = act.procesar_statuspage(statuspage(incidencias=inc), PROV)
+        self.assertEqual((r["estado"], r["incidencias"][0]["impacto"]), ("operativo", "aviso"))
+
 
 class TestStatusio(unittest.TestCase):
     def test_incidencia(self):
@@ -184,6 +204,13 @@ class TestAzureDevOps(unittest.TestCase):
         self.assertEqual(r["estado"], "parcial")
         self.assertEqual(r["componentes"], [{"nombre": "Pipelines (Europe)", "estado": "parcial"}])
         self.assertEqual(len(r["incidencias"]), 1)
+
+    def test_mantenimiento(self):
+        datos = {"status": {"health": "advisory", "message": "Service maintenance is in effect"},
+                 "services": [{"id": "Core", "geographies": [{"name": "Australia", "health": "advisory"}]}]}
+        r = act.procesar_azure_devops(datos, PROV)
+        self.assertEqual((r["estado"], r["incidencias"]), ("mantenimiento", []))
+        self.assertEqual(r["componentes"][0]["estado"], "mantenimiento")
 
     def test_sano(self):
         r = act.procesar_azure_devops({"status": {"health": "healthy", "message": "Everything is looking good"}}, PROV)

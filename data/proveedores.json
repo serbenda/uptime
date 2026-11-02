@@ -30,8 +30,6 @@
      "url": "https://status.dev.azure.com/_apis/status/health?api-version=7.1-preview.1", "web": "https://status.dev.azure.com"},
     {"id": "docker-hub", "nombre": "Docker Hub", "categoria": "desarrollo", "tipo": "statusio",
      "pagina": "533c6539221ae15e3f000031", "web": "https://www.dockerstatus.com"},
-    {"id": "quay", "nombre": "Quay.io", "categoria": "desarrollo", "tipo": "statuspage",
-     "url": "https://status.quay.io", "web": "https://status.quay.io"},
     {"id": "hashicorp", "nombre": "HashiCorp (Terraform)", "categoria": "desarrollo", "tipo": "statuspage",
      "url": "https://status.hashicorp.com", "web": "https://status.hashicorp.com"},
     {"id": "npm", "nombre": "npm", "categoria": "desarrollo", "tipo": "statuspage",
