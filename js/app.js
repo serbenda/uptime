@@ -122,14 +122,18 @@ function aplicarIdioma(idioma) {
   if (estado.datos) pintar();
 }
 
+function elegirIdioma(idioma) {
+  if (!(idioma in IDIOMAS)) return false;
+  try { localStorage.setItem("uptime.idioma", idioma); } catch { /* sin almacenamiento */ }
+  const url = new URL(location.href);
+  url.searchParams.delete("lang");
+  history.replaceState(null, "", url);
+  aplicarIdioma(idioma);
+  return true;
+}
+
 for (const b of document.querySelectorAll("[data-idioma]")) {
-  b.addEventListener("click", () => {
-    try { localStorage.setItem("uptime.idioma", b.dataset.idioma); } catch { /* sin almacenamiento */ }
-    const url = new URL(location.href);
-    url.searchParams.delete("lang");
-    history.replaceState(null, "", url);
-    aplicarIdioma(b.dataset.idioma);
-  });
+  b.addEventListener("click", () => elegirIdioma(b.dataset.idioma));
 }
 
 function pintarLeyenda() {

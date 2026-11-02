@@ -509,6 +509,89 @@ code, .mono { font-family: var(--mono); }
 .pie { padding-block: 56px 48px; }
 .pie p { margin: 0; padding-top: 20px; border-top: 1px solid #1E2933; color: var(--tenue); font-size: 0.8125rem; max-width: 80ch; }
 
+/* ------------------------------------------------ terminal interactiva */
+
+.sesion {
+  max-height: 340px;
+  overflow: auto;
+  margin: 10px 0 2px;
+  padding-right: 4px;
+  scrollbar-color: #2C3A47 transparent;
+}
+.sesion:empty { display: none; }
+.sesion .linea { min-height: 1.6em; }
+.t-tabla { display: grid; gap: 0 18px; margin: 2px 0; }
+.t-tabla > * { white-space: pre-wrap; overflow-wrap: anywhere; }
+.t-cabecera { color: var(--apagado); }
+.t-clave { color: var(--tenue); }
+.t-orden { color: var(--tinta); }
+.t-error { color: var(--grave); }
+.t-carpeta { color: var(--prompt); font-weight: 700; }
+.sesion .nivel { color: var(--nivel); }
+.sesion a { color: var(--tinta); }
+.sesion mark { background: color-mix(in srgb, var(--degradado) 35%, transparent); color: var(--tinta); border-radius: 2px; }
+.t-enlace {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--prompt);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.t-enlace:hover { text-decoration-style: solid; }
+.t-neofetch { display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: start; margin: 6px 0; }
+.t-arte { margin: 0; font: inherit; line-height: 1.3; color: var(--apagado); }
+.t-info p { margin: 0; }
+.t-paleta { margin-top: 6px !important; letter-spacing: -0.05em; }
+
+.entrada {
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+  margin-top: 4px;
+  border-bottom: 1px solid transparent;
+}
+.entrada:focus-within { border-bottom-color: color-mix(in srgb, var(--prompt) 45%, transparent); }
+.entrada .prompt { flex: none; cursor: text; }
+.entrada-caja { position: relative; flex: 1; min-width: 0; }
+.entrada input {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font: inherit;
+  color: var(--tinta);
+  caret-color: var(--operativo);
+  text-indent: 1.1ch;
+}
+.entrada input::placeholder { color: var(--apagado); }
+.entrada input:focus { text-indent: 0; }
+.entrada .cursor { position: absolute; left: 0; top: 0.22em; pointer-events: none; }
+.entrada input:focus + .cursor, .entrada input:not(:placeholder-shown) + .cursor { display: none; }
+.entrada input:not(:placeholder-shown) { text-indent: 0; }
+
+.atajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+}
+.atajo {
+  border: 1px solid #24313D;
+  background: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font: inherit;
+  color: var(--tenue);
+  cursor: pointer;
+}
+.atajo:hover { color: var(--tinta); border-color: var(--prompt); }
+
 /* ------------------------------------------------ idioma */
 
 .consola-barra { align-items: center; flex-wrap: wrap; }
