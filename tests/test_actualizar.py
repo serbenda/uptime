@@ -132,6 +132,9 @@ class TestStatuspage(unittest.TestCase):
         inc = [{"id": "cve", "name": "Customer Security Advisory: CVE-1", "impact": "none", "status": "investigating"}]
         r = act.procesar_statuspage(statuspage(incidencias=inc), PROV)
         self.assertEqual((r["estado"], r["incidencias"][0]["impacto"]), ("operativo", "aviso"))
+        inc = [{"id": "cve", "name": "Customer Security Advisory: CVE-2026-98432", "impact": "minor", "status": "investigating"}]
+        r = act.procesar_statuspage(statuspage(incidencias=inc), PROV)
+        self.assertEqual((r["estado"], r["incidencias"][0]["impacto"]), ("operativo", "aviso"), "por el título")
 
 
 class TestStatusio(unittest.TestCase):
@@ -242,6 +245,51 @@ class TestSlack(unittest.TestCase):
 
     def test_ok(self):
         self.assertEqual(act.procesar_slack({"status": "ok", "active_incidents": []}, PROV)["estado"], "operativo")
+
+
+class TestUbicacion(unittest.TestCase):
+    CASOS = {
+        "Houston, United States - (IAH)": ["@IAH"],               # Cloudflare: el código manda sobre el país
+        "HNL (Honolulu) on 2026-11-02": ["@HNL"],                  # mantenimientos de Cloudflare
+        "Connectivity Issue between ID-CGK (Jakarta) and SG-SIN-2 (Singapore 2)": ["@CGK", "@SIN"],  # Linode
+        "Multiple services (N. Virginia)": ["@IAD"],               # AWS
+        "Elevated errors in us-east-1": ["@IAD"],
+        "Belgium (europe-west1)": ["@BRU"],                        # Google Cloud
+        "East US 2 - Virtual Machines": ["@RIC"],                  # Azure: la región más larga primero
+        "Networking issues in West Europe": ["@AMS"],
+        "Edge Delivery issues between Indonesia and Singapore": ["@SIN", "IDN"],
+        "Europe (Ireland)": ["IRL"],                               # el país antes que la zona
+        "Degraded performance in APAC": ["Z:apac"],
+        "Actions": [],
+        "SAN storage degraded": [],                                # siglas que no son aeropuertos
+    }
+
+    def test_casos(self):
+        for texto, esperado in self.CASOS.items():
+            with self.subTest(texto=texto):
+                self.assertEqual(act.ubicar(texto), esperado)
+
+    def test_lugares_completos(self):
+        for tabla in ("regiones", "iata", "ciudades", "paises", "zonas"):
+            for clave, id_lugar in act.LUGARES[tabla].items():
+                self.assertIn(id_lugar, act.LUGARES["lugares"], f"{tabla}: {clave}")
+
+    def test_localizar(self):
+        comps = [{"name": "Houston, United States - (IAH)", "status": "major_outage"},
+                 {"name": "Dallas, United States - (DFW)", "status": "under_maintenance"},
+                 {"name": "API", "status": "partial_outage"}]
+        inc = [{"id": "a", "name": "Customer Security Advisory: Frankfurt", "impact": "none", "status": "investigating"},
+               {"id": "b", "name": "Latency in Madrid", "impact": "minor", "status": "investigating",
+                "components": [{"name": "Houston, United States - (IAH)"}]}]
+        r = act.procesar_statuspage(statuspage(componentes=comps, incidencias=inc), PROV)
+        ids = {p["id"]: p for p in r["lugares"]}
+        self.assertEqual(set(ids), {"@IAH", "@DFW", "@MAD"}, "los avisos no van al mapa")
+        self.assertEqual(ids["@IAH"]["nivel"], "grave")
+        self.assertEqual(ids["@DFW"]["nivel"], "mantenimiento")
+        self.assertEqual(ids["@IAH"]["n"], 2)
+        self.assertEqual(r["sin_ubicacion"], 1, "el componente API no tiene lugar")
+        self.assertEqual(r["lugares"][0]["id"], "@IAH", "lo más grave primero")
+        self.assertNotIn("lugares_texto", r["incidencias"][0])
 
 
 class TestConsulta(unittest.TestCase):

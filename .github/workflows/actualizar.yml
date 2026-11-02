@@ -5,11 +5,11 @@ name: Actualizar datos
 
 on:
   schedule:
-    - cron: "4,14,24,34,44,54 * * * *"   # cada 10 minutos (GitHub puede retrasarlo o saltarse alguno)
+    - cron: "3,13,23,33,43,53 * * * *"   # cada 10 minutos (GitHub puede retrasarlo o saltarse alguno)
   # Tras cada merge se recalculan los datos con el código nuevo, sin esperar al siguiente turno
   push:
     branches: [main]
-    paths: ["scripts/**", "data/proveedores.json", ".github/workflows/actualizar.yml"]
+    paths: ["scripts/**", "data/proveedores.json", "data/lugares.json", ".github/workflows/actualizar.yml"]
   workflow_dispatch:
     inputs:
       publicar:

@@ -17,6 +17,9 @@ Escribe en $UPTIME_SALIDA (por defecto data/; en la Action, la rama `datos`):
   estado.json        estado actual de cada proveedor (incidencias, componentes, mantenimientos)
   historial.json     resumen diario por proveedor (últimos 90 días) para las barras de disponibilidad
   incidencias.json   registro de incidencias de los últimos 30 días, con su duración
+
+Para el mapa, cada componente afectado e incidencia se intenta ubicar con data/lugares.json
+(lo genera scripts/generar_mapa.py): región de nube, código IATA, ciudad, país o zona del mundo.
 """
 
 import html
@@ -73,6 +76,91 @@ def peor(*niveles):
     return max(validos, key=RANGO.get) if validos else "operativo"
 
 
+# ---------------------------------------------------------------- ubicación
+
+def _cargar_lugares():
+    try:
+        return json.loads((FIJOS / "lugares.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"regiones": {}, "iata": {}, "ciudades": {}, "paises": {}, "zonas": {}, "lugares": {}}
+
+
+LUGARES = _cargar_lugares()
+MAX_LUGARES = 80          # puntos del mapa por proveedor
+MAX_EJEMPLOS = 4          # textos de origen que se guardan por punto
+
+
+def _patron(claves, mayusculas=True):
+    """Una expresión con todas las claves, las largas primero ("East US 2" antes que "East US")."""
+    if not claves:
+        return None
+    alternativas = "|".join(re.escape(k) for k in sorted(claves, key=len, reverse=True))
+    return re.compile(rf"(?<![\w-])({alternativas})(?![\w-])", 0 if mayusculas else re.I)
+
+
+_IATA = re.compile(r"\(([A-Z]{3})\)|^([A-Z]{3})\s*\(|(?<![A-Za-z])[A-Z]{2}-([A-Z]{3})(?![A-Za-z])")
+_NIVELES_UBICACION = [
+    ("regiones", _patron(LUGARES["regiones"], mayusculas=False), {k.lower(): v for k, v in LUGARES["regiones"].items()}),
+    ("iata", None, LUGARES["iata"]),
+    ("ciudades", _patron(LUGARES["ciudades"]), LUGARES["ciudades"]),
+    ("paises", _patron(LUGARES["paises"]), LUGARES["paises"]),
+    ("zonas", _patron(LUGARES["zonas"]), LUGARES["zonas"]),
+]
+
+
+def ubicar(texto):
+    """Ids de lugar que aparecen en un texto, lo más concretos posible.
+
+    Se buscan regiones de nube, códigos IATA y ciudades; los países solo cuentan si no hay ya una
+    ciudad de ese país ("Houston, United States - (IAH)" da Houston, "Indonesia and Singapore" da
+    los dos), y las zonas del mundo solo si no hay nada más concreto.
+    """
+    if not texto:
+        return []
+    encontrados = {}
+    for nombre, patron, tabla in _NIVELES_UBICACION:
+        if nombre == "iata":
+            ids = [tabla[c] for m in _IATA.finditer(texto) for c in m.groups() if c and c in tabla]
+        else:
+            ids = [tabla[m.group(1).lower() if nombre == "regiones" else m.group(1)]
+                   for m in patron.finditer(texto)] if patron else []
+        encontrados[nombre] = ids
+    concretos = encontrados["regiones"] + encontrados["iata"] + encontrados["ciudades"]
+    paises_con_ciudad = {LUGARES["lugares"].get(i, {}).get("pais") for i in concretos}
+    ids = concretos + [i for i in encontrados["paises"] if i not in paises_con_ciudad]
+    return list(dict.fromkeys(ids or encontrados["zonas"]))
+
+
+def localizar(r, afectados):
+    """Puntos del mapa: un lugar con su peor nivel y ejemplos de lo que falla allí."""
+    puntos, sin_ubicar = {}, 0
+
+    def anotar(textos, nivel):
+        nonlocal sin_ubicar
+        ids = list(dict.fromkeys(i for t in textos for i in ubicar(t)))
+        if not ids:
+            sin_ubicar += 1
+            return
+        for i in ids:
+            lugar = LUGARES["lugares"].get(i)
+            if not lugar:
+                continue
+            p = puntos.setdefault(i, {"id": i, **lugar, "nivel": "operativo", "n": 0, "ejemplos": []})
+            p["nivel"] = peor(p["nivel"], nivel)
+            p["n"] += 1
+            if len(p["ejemplos"]) < MAX_EJEMPLOS:
+                p["ejemplos"].append({"t": textos[0][:120], "nivel": nivel})
+
+    for c in afectados:
+        anotar([c["nombre"]], c["estado"])
+    for i in r["incidencias"]:
+        textos = i.pop("lugares_texto", [])
+        if i["impacto"] != "aviso":
+            anotar([i["titulo"], *textos], i["impacto"])
+    r["lugares"] = sorted(puntos.values(), key=lambda p: (-RANGO[p["nivel"]], -p["n"]))[:MAX_LUGARES]
+    r["sin_ubicacion"] = sin_ubicar
+
+
 def tope(nivel, maximo):
     return nivel if RANGO.get(nivel, -1) <= RANGO[maximo] else maximo
 
@@ -88,6 +176,7 @@ def estado_final(r, indicador, afectados, en_curso=False):
         and len(afectados) / total < ALCANCE_MINIMO and not serias
     if r["alcance_limitado"]:
         componentes, indicador = tope(componentes, "degradado"), tope(indicador, "degradado")
+    localizar(r, afectados)
     return peor(indicador, componentes, *impactos, "mantenimiento" if en_curso else "operativo")
 
 
@@ -154,7 +243,7 @@ def leer_json(datos):
 
 def vacio():
     return {"estado": "operativo", "resumen": "", "componentes": [], "total_componentes": 0, "afectados": 0,
-            "alcance_limitado": False, "incidencias": [], "mantenimientos": []}
+            "alcance_limitado": False, "incidencias": [], "mantenimientos": [], "lugares": [], "sin_ubicacion": 0}
 
 
 # ---------------------------------------------------------------- Statuspage
@@ -175,6 +264,17 @@ def ultimo_mensaje(actualizaciones, campo="body"):
         return ""
     ordenadas = sorted(actualizaciones, key=lambda u: str(u.get("display_at") or u.get("created_at") or ""))
     return texto_limpio(ordenadas[-1].get(campo))
+
+
+# Avisos de seguridad que algunos proveedores (Akamai, Linode) publican como incidencia menor
+AVISO_SEGURIDAD = re.compile(r"security advisory|security bulletin|\bCVE-\d{4}-\d+", re.I)
+
+
+def impacto_sp(incidencia):
+    impacto = SP_IMPACTO.get(incidencia.get("impact"), "degradado")
+    if impacto == "degradado" and AVISO_SEGURIDAD.search(incidencia.get("name") or ""):
+        return "aviso"
+    return impacto
 
 
 def procesar_statuspage(datos, prov):
@@ -198,12 +298,13 @@ def procesar_statuspage(datos, prov):
         r["incidencias"].append({
             "id": str(i.get("id") or i.get("name")),
             "titulo": texto_limpio(i.get("name"), 200),
-            "impacto": SP_IMPACTO.get(i.get("impact"), "degradado"),
+            "impacto": impacto_sp(i),
             "fase": SP_ESTADO.get(i.get("status"), i.get("status") or ""),
             "inicio": fecha_iso(i.get("started_at") or i.get("created_at")),
             "actualizado": fecha_iso(i.get("updated_at")),
             "mensaje": ultimo_mensaje(i.get("incident_updates")),
             "enlace": i.get("shortlink") or f"{web.rstrip('/')}/incidents/{i.get('id')}",
+            "lugares_texto": [c.get("name") or "" for c in i.get("components") or [] if isinstance(c, dict)],
         })
 
     en_curso = False
@@ -322,6 +423,7 @@ def procesar_google(datos, prov):
             "mensaje": texto_limpio(reciente.get("text")),
             "enlace": uri if uri.startswith("http") else base + uri.lstrip("/"),
             "afecta": productos[:8],
+            "lugares_texto": [lu.get("title") or "" for lu in i.get("currently_affected_locations") or []],
         })
     r["componentes"] = sorted(({"nombre": n, "estado": e} for n, e in afectados.items()),
                               key=lambda c: -RANGO[c["estado"]])[:MAX_COMPONENTES]
@@ -431,6 +533,7 @@ def procesar_aws(datos, prov):
             "actualizado": fecha_iso(ultimo.get("timestamp")) or inicio,
             "mensaje": texto_limpio(ultimo.get("message")),
             "enlace": prov.get("web"),
+            "lugares_texto": [region, str(e.get("region") or "")],
         })
     r["componentes"] = sorted(({"nombre": n, "estado": e} for n, e in afectados.items()),
                               key=lambda c: -RANGO[c["estado"]])[:MAX_COMPONENTES]
@@ -584,7 +687,8 @@ def actualizar_incidencias(registro, proveedores):
                                        "inicio": i.get("inicio") or ahora, "visto": ahora, "fin": None,
                                        "enlace": i.get("enlace")}
             r["titulo"] = i["titulo"] or r["titulo"]
-            r["impacto"] = peor(r["impacto"], i["impacto"])
+            # Un aviso (de seguridad, sin impacto) se queda como aviso aunque antes se registrara de otra forma
+            r["impacto"] = "aviso" if i["impacto"] == "aviso" else peor(r["impacto"], i["impacto"])
             r["visto"] = ahora
     for clave, r in registro.items():
         if clave not in vistos and not r.get("fin"):
