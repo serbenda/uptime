@@ -682,10 +682,45 @@ flowchart LR
 | Workflow | When | What it does | Permissions |
 |---|---|---|---|
 | [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`7,17,27,37,47,57 * * * *`); when changes to `scripts/`, `data/proveedores.json`, `data/lugares.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `datos` and opens an issue if a source has been down for a while | `contents: write`, `issues: write` |
-| [`tests.yml`](.github/workflows/tests.yml) (*Tests*) | On every PR and every push to `development` | `python -m unittest discover -s tests -v` | Defaults |
+| [`tests.yml`](.github/workflows/tests.yml) (*Tests*) | On every PR to `main` | `python -m unittest discover -s tests -v`. Its *Unit tests* check is required: a PR can't be merged until it passes | Defaults |
 | `pages-build-deployment` | When `main` changes | GitHub Pages deployment | GitHub's |
 
 The cron minute is offset from the top of the hour, which is when GitHub is busiest and most likely to delay scheduled runs.
+
+### How the Actions fit together
+
+From a change on `development` to fresh data on the site:
+
+```mermaid
+flowchart TB
+  Dev["Push to development<br/><i>nothing runs</i>"] --> PR["PR to main"]
+  PR --> Tests{"Tests<br/>Unit tests check"}
+  Tests -- red --> Fix["Can't be merged:<br/>fix it on development"]
+  Fix --> Dev
+  Tests -- green --> Merge["Merge into main"]
+  Merge --> Pages["pages-build-deployment<br/>publishes the site"]
+  Merge --> Changed{"Did scripts/, proveedores.json,<br/>lugares.json or update-data.yml change?"}
+  Changed -- yes --> Update
+  Changed -- no --> Wait["Wait for the next cron slot"]
+  Wait --> Update
+  Cron["Cron, every 10 min"] --> Update["Update data"]
+  Manual["Run workflow (manual)"] --> Update
+  Update --> Datos[("datos branch")]
+  Update -. a source down for 3 h .-> Issue["Issue «Data sources down»"]
+  Datos --> Site["The site reloads the data<br/>every 5 minutes"]
+```
+
+| Moment | What runs | What it guarantees |
+|---|---|---|
+| Push to `development` | Nothing | Work in progress costs nothing and blocks nothing |
+| PR to `main` | *Tests* (the *Unit tests* check, about 15 s) | Every parser, rule and file in the config is checked before anything reaches `main` |
+| Red tests | The PR can't be merged | `main` never gets code that breaks the collector |
+| Merge into `main` | *pages-build-deployment*, and *Update data* if the collector, the config, the gazetteer or the workflow changed | The site and the data reflect the new code within a minute |
+| Every 10 minutes | *Update data* | Fresh data, 90 days of history and incidents opened and closed |
+| Manually | *Update data* (with *publish* unticked, to `datos-prueba`) | Testing with real data without touching the site |
+| A source down for 3 hours | *Update data* opens or comments on the *Data sources down* issue | Nobody has to keep an eye on the log |
+
+The guarantee that red tests block a merge comes from a ruleset on `main` (see [Setting it up](#setting-it-up), step 6); the workflow alone only reports.
 
 ### Branch model
 
@@ -705,8 +740,8 @@ gitGraph
 
 | Branch | Content | Written by |
 |---|---|---|
-| `development` | Where work happens. Every push runs the tests | People |
-| `main` | What Pages serves and what the cron runs. Only takes changes through PRs | PRs from `development` |
+| `development` | Where work happens | People |
+| `main` | What Pages serves and what the cron runs. Only takes changes through PRs, and only once the tests pass | PRs from `development` |
 | `datos` | The Action's output: a single orphan commit replaced with a *force push* | `github-actions[bot]` |
 | `datos-prueba` | Same as `datos`, for test runs. The site doesn't read it | `github-actions[bot]` |
 
@@ -717,7 +752,7 @@ gitGraph
 3. Custom domain: the [`CNAME`](CNAME) file says `uptime.bendi.dev`. In DNS, a `CNAME` record from `uptime` to `serbenda.github.io` (with Cloudflare, set to *DNS only* so GitHub can issue the certificate); then, in Settings → Pages, tick *Enforce HTTPS*. Without a custom domain, the site lives at `serbenda.github.io/uptime`, or at `<user domain>/uptime` if the account's user site has one.
 4. Actions → *Update data* → *Run workflow*, to create the `datos` branch without waiting for the cron.
 5. Check that the site loads and the console bar says `updated … ago`.
-6. If you protect branches: protect `main` and `development`, and only allow changes to `main` through PRs. The Action needs no special permissions on `datos`, which must not be protected.
+6. Protect `main` with a ruleset (Settings → Rules → Rulesets → *New branch ruleset*): target `main`, enforcement *Active*, and tick *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals) and *Require status checks to pass* with the *Unit tests* check. From then on `main` only changes through a PR with green tests. Don't add rules for `datos`: the Action force-pushes to it.
 
 No secrets or variables are needed: every source is public.
 
