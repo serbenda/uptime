@@ -1,9 +1,10 @@
 name: Tests
 
+# Runs on every PR to main. A ruleset on main makes "Unit tests" a required check:
+# a PR can't be merged until the tests pass.
 on:
   pull_request:
-  push:
-    branches: [development]
+    branches: [main]
 
 jobs:
   tests:
