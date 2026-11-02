@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="512" height="512" role="img" aria-label="uptime">
+<title>uptime</title>
+<defs>
+  <filter id="qb" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="qg" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="4"/></filter>
+</defs>
+<rect width="128" height="128" rx="28" fill="#0F151B"/>
+<g transform="translate(8 38) scale(1.0)">
+<rect x="0" y="0" width="112" height="52" rx="9" fill="#18212A"/>
+<rect x="10" y="6" width="92" height="40" rx="5" fill="#253241"/>
+<rect x="10" y="6" width="92" height="3" rx="1.5" fill="#33445A"/>
+<circle cx="5" cy="16" r="1.8" fill="#070B0F"/><circle cx="5" cy="36" r="1.8" fill="#070B0F"/>
+<circle cx="107" cy="16" r="1.8" fill="#070B0F"/><circle cx="107" cy="36" r="1.8" fill="#070B0F"/>
+<circle cx="25" cy="26" r="9" fill="#43D17F" opacity=".25" filter="url(#qb)"/>
+<circle cx="25" cy="26" r="5.2" fill="#43D17F"/>
+<circle cx="23.4" cy="24.4" r="1.6" fill="#C9F5DB"/>
+<rect x="40" y="13" width="56" height="26" rx="3" fill="#0A1016"/>
+<rect x="43.00" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="46.57" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="50.14" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="53.71" y="21.80" width="2.6" height="13.20" rx=".6" fill="#F2C230"/>
+<rect x="57.28" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="60.85" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="64.42" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="67.99" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="71.56" y="15.00" width="2.6" height="20.00" rx=".6" fill="#FF4D4D"/>
+<rect x="75.13" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="78.70" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="82.27" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="85.84" y="18.20" width="2.6" height="16.80" rx=".6" fill="#FF8A2A"/>
+<rect x="89.41" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+<rect x="92.98" y="28.20" width="2.6" height="6.80" rx=".6" fill="#2E9A60"/>
+</g>
+</svg>
