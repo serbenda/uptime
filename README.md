@@ -746,9 +746,47 @@ sequenceDiagram
 | Permissions | **Actions: Read and write**. GitHub adds *Metadata: Read-only*, which is mandatory. Nothing else |
 | Expiration | One year at most. Note the date: when it expires the calls return `401` and the data stops updating |
 
+**Creating it, step by step:**
+
+1. On GitHub, open **[github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)** (your avatar → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**).
+2. **Token name:** `uptime-cron`. **Description** (optional): `Triggers Update data every 10 minutes`.
+3. **Resource owner:** `serbenda`.
+4. **Expiration:** *Custom*, one year from today. Write the date down.
+5. **Repository access:** **Only select repositories** → `serbenda/uptime`.
+6. **Permissions** → **Repository permissions** → **Actions** → **Access: Read and write**. *Metadata: Read-only* is added automatically. Leave everything else, including *Account permissions*, at *No access*.
+7. Check the summary says *1 repository* and *Actions: read and write*, then **Generate token**.
+8. **Copy the token now** (`github_pat_…`, about 90 characters): GitHub only shows it once. Paste it straight into cron-job.org; don't save it in the repository or share it.
+
 With it you can start, view and cancel this repository's workflow runs, and nothing more: it can't read or change the code, the data, the settings or any other repository. Never use a *classic* token here: those reach every repository on the account.
 
 #### The cron-job.org job
+
+**Creating it, step by step:**
+
+1. Sign up for free at **[cron-job.org](https://cron-job.org)** and confirm your email.
+2. **Dashboard** → **Cronjobs** → **Create cronjob**.
+3. **Common** tab:
+   - **Title:** `uptime update-data`
+   - **URL:** `https://api.github.com/repos/serbenda/uptime/actions/workflows/update-data.yml/dispatches`
+   - **Execution schedule:** *Every 10 minutes*
+4. **Advanced** tab:
+   - **Requires HTTP authentication:** unticked.
+   - **Headers** → **Add header**, once per row:
+
+     | Key | Value |
+     |---|---|
+     | `Authorization` | `Bearer github_pat_…` (the word `Bearer`, one space, then the whole token, no quotes) |
+     | `Accept` | `application/vnd.github+json` |
+     | `X-GitHub-Api-Version` | `2022-11-28` |
+     | `Content-Type` | `application/json` |
+
+   - **Request method:** `POST`
+   - **Request body:** `{"ref":"main"}`
+5. **Notifications** tab: tick *Notify me when execution fails*.
+6. **Save**, then **⋯ → Test run** on the job. It must answer **204 No Content**, and a new `workflow_dispatch` run of *Update data* must appear in [Actions](https://github.com/serbenda/uptime/actions/workflows/update-data.yml).
+7. Make sure the job is **Enabled**. From then on its history shows a `204` every 10 minutes.
+
+In short, the job is:
 
 | Field | Value |
 |---|---|
