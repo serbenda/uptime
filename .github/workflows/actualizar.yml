@@ -1,0 +1,97 @@
+name: Actualizar datos
+
+# Los datos van a la rama `datos`, que solo guarda la última versión (un único commit
+# que se reemplaza cada vez). Así main solo recibe cambios de código por PR.
+
+on:
+  schedule:
+    - cron: "4,14,24,34,44,54 * * * *"   # cada 10 minutos (GitHub puede retrasarlo o saltarse alguno)
+  # Tras cada merge se recalculan los datos con el código nuevo, sin esperar al siguiente turno
+  push:
+    branches: [main]
+    paths: ["scripts/**", "data/proveedores.json", ".github/workflows/actualizar.yml"]
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: "Publicar en la rama datos (desmarcar para probar cambios sin tocar la web)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: actualizar-datos
+  cancel-in-progress: false
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      UPTIME_SALIDA: ${{ github.workspace }}/salida/data
+      GH_TOKEN: ${{ github.token }}
+      PUBLICAR: ${{ github.event_name != 'workflow_dispatch' || inputs.publicar }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Si no se pueden leer los datos anteriores, la ejecución falla en vez de empezar de cero:
+      # empezar de cero borraría el historial de 90 días al publicar
+      - name: Recuperar los datos anteriores
+        run: |
+          mkdir -p salida/data
+          set +e
+          git ls-remote --exit-code --heads origin datos > /dev/null
+          existe=$?
+          set -e
+          if [ "$existe" = "2" ]; then
+            echo "La rama datos aún no existe: se empieza de cero"
+          elif [ "$existe" = "0" ]; then
+            git fetch --depth=1 origin datos
+            git --work-tree=salida checkout FETCH_HEAD -- data
+            git reset -q
+            test -s salida/data/historial.json || { echo "La rama datos no tiene historial.json"; exit 1; }
+          else
+            echo "No se ha podido consultar la rama datos (código $existe)"
+            exit 1
+          fi
+          ls -la salida/data
+
+      - name: Consultar las páginas de estado
+        run: python scripts/actualizar.py
+
+      # En una ejecución de prueba los datos van a la rama `datos-prueba` y la web no cambia
+      - name: Publicar los datos
+        working-directory: salida
+        run: |
+          rama=$([ "$PUBLICAR" = "true" ] && echo datos || echo datos-prueba)
+          git init -q
+          git checkout -q --orphan "$rama"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git commit -q -m "Datos $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$rama"
+
+      - name: Avisar si una fuente lleva tiempo caída
+        if: env.PUBLICAR == 'true'
+        env:
+          ENLACE_EJECUCION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if python scripts/salud.py > salud.md; then
+            cat salud.md
+            exit 0
+          fi
+          cat salud.md
+          titulo="Fuentes de datos caídas"
+          numero=$(gh issue list --state open --search "\"$titulo\" in:title" --json number --jq '.[0].number')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body-file salud.md
+          else
+            gh issue create --title "$titulo" --body-file salud.md
+          fi

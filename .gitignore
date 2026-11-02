@@ -1,0 +1,6 @@
+# Datos generados: en producción viven en la rama `datos`
+data/estado.json
+data/historial.json
+data/incidencias.json
+*.tmp
+__pycache__/
