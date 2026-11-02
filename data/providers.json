@@ -1,0 +1,36 @@
+{
+  "categories": {"cloud": "Cloud", "dev": "Development", "network": "Network & CDN", "collab": "Collaboration", "ai": "AI"},
+  "providers": [
+    {"id": "aws", "name": "AWS", "category": "cloud", "type": "aws", "url": "https://health.aws.amazon.com/public/currentevents", "web": "https://health.aws.amazon.com/health/status"},
+    {"id": "azure", "name": "Microsoft Azure", "category": "cloud", "type": "azure", "url": "https://azure.status.microsoft/en-us/status/feed/", "web": "https://azure.status.microsoft/en-us/status"},
+    {"id": "google-cloud", "name": "Google Cloud", "category": "cloud", "type": "google", "url": "https://status.cloud.google.com/incidents.json", "web": "https://status.cloud.google.com/"},
+    {"id": "red-hat", "name": "Red Hat", "category": "cloud", "type": "statuspage", "url": "https://status.redhat.com", "web": "https://status.redhat.com"},
+    {"id": "digitalocean", "name": "DigitalOcean", "category": "cloud", "type": "statuspage", "url": "https://status.digitalocean.com", "web": "https://status.digitalocean.com"},
+    {"id": "linode", "name": "Akamai Cloud (Linode)", "category": "cloud", "type": "statuspage", "url": "https://status.linode.com", "web": "https://status.linode.com"},
+
+    {"id": "github", "name": "GitHub", "category": "dev", "type": "statuspage", "url": "https://www.githubstatus.com", "web": "https://www.githubstatus.com"},
+    {"id": "gitlab", "name": "GitLab", "category": "dev", "type": "statusio", "page": "5b36dc6502d06804c08349f7", "web": "https://status.gitlab.com"},
+    {"id": "bitbucket", "name": "Bitbucket", "category": "dev", "type": "statuspage", "url": "https://bitbucket.status.atlassian.com", "web": "https://bitbucket.status.atlassian.com"},
+    {"id": "azure-devops", "name": "Azure DevOps", "category": "dev", "type": "azure-devops", "url": "https://status.dev.azure.com/_apis/status/health?api-version=7.1-preview.1", "web": "https://status.dev.azure.com"},
+    {"id": "docker-hub", "name": "Docker Hub", "category": "dev", "type": "statusio", "page": "533c6539221ae15e3f000031", "web": "https://www.dockerstatus.com"},
+    {"id": "hashicorp", "name": "HashiCorp (Terraform)", "category": "dev", "type": "statuspage", "url": "https://status.hashicorp.com", "web": "https://status.hashicorp.com"},
+    {"id": "npm", "name": "npm", "category": "dev", "type": "statuspage", "url": "https://status.npmjs.org", "web": "https://status.npmjs.org"},
+    {"id": "pypi", "name": "PyPI", "category": "dev", "type": "statuspage", "url": "https://status.python.org", "web": "https://status.python.org"},
+    {"id": "circleci", "name": "CircleCI", "category": "dev", "type": "statuspage", "url": "https://status.circleci.com", "web": "https://status.circleci.com"},
+
+    {"id": "cloudflare", "name": "Cloudflare", "category": "network", "type": "statuspage", "url": "https://www.cloudflarestatus.com", "web": "https://www.cloudflarestatus.com"},
+    {"id": "akamai", "name": "Akamai", "category": "network", "type": "statuspage", "url": "https://www.akamaistatus.com", "web": "https://www.akamaistatus.com"},
+    {"id": "netlify", "name": "Netlify", "category": "network", "type": "statuspage", "url": "https://www.netlifystatus.com", "web": "https://www.netlifystatus.com"},
+    {"id": "vercel", "name": "Vercel", "category": "network", "type": "statuspage", "url": "https://www.vercel-status.com", "web": "https://www.vercel-status.com"},
+
+    {"id": "google-workspace", "name": "Google Workspace", "category": "collab", "type": "google", "url": "https://www.google.com/appsstatus/dashboard/incidents.json", "web": "https://www.google.com/appsstatus/dashboard/"},
+    {"id": "slack", "name": "Slack", "category": "collab", "type": "slack", "url": "https://slack-status.com/api/v2.0.0/current", "web": "https://slack-status.com"},
+    {"id": "zoom", "name": "Zoom", "category": "collab", "type": "statuspage", "url": "https://status.zoom.us", "web": "https://status.zoom.us"},
+    {"id": "jira", "name": "Jira", "category": "collab", "type": "statuspage", "url": "https://jira-software.status.atlassian.com", "web": "https://jira-software.status.atlassian.com"},
+    {"id": "confluence", "name": "Confluence", "category": "collab", "type": "statuspage", "url": "https://confluence.status.atlassian.com", "web": "https://confluence.status.atlassian.com"},
+    {"id": "dropbox", "name": "Dropbox", "category": "collab", "type": "statuspage", "url": "https://status.dropbox.com", "web": "https://status.dropbox.com"},
+    {"id": "discord", "name": "Discord", "category": "collab", "type": "statuspage", "url": "https://discordstatus.com", "web": "https://discordstatus.com"},
+
+    {"id": "openai", "name": "OpenAI", "category": "ai", "type": "statuspage", "url": "https://status.openai.com", "web": "https://status.openai.com"}
+  ]
+}

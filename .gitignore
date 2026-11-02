@@ -1,6 +1,12 @@
-# Datos generados: en producción viven en la rama `datos`
+# Generated data: in production it lives on the `data` branch
+data/status.json
+data/history.json
+data/incidents.json
+# Legacy names (before the code was translated to English)
 data/estado.json
 data/historial.json
 data/incidencias.json
+# Temporary page used by scripts/screenshots.py
+.social.html
 *.tmp
 __pycache__/

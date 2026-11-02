@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/uptime-oscuro.svg">
-  <img src="docs/logo/uptime-claro.svg" alt="uptime" width="440">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/logo/logo-dark.svg">
+  <img src="docs/logo/logo-light.svg" alt="uptime" width="440">
 </picture>
 
 ### Is it down, or is it just me?
@@ -123,7 +123,7 @@ Above it sits the logo, and it's live: the LED that dots the **i** takes the col
 Below it, a terminal session that has already run two commands:
 
 - **`uptime`** prints a line like the real command: time, days of history, number of services, how many are failing and a *load average*. The load average is real: the share of services with a partial or major outage right now, averaged over the last 7 days and over the last 30. Hover over it for an explanation.
-- **`systemctl --failed`** (or `systemctl status proveedores` when all is well) answers the question with systemd's boot marker: a green `[  OK  ] All systems operational.` or a red `[FAILED] GitHub and Azure are having problems.` With more than three services down it's summarised: `5 services are having problems.`
+- **`systemctl --failed`** (or `systemctl status providers` when all is well) answers the question with systemd's boot marker: a green `[  OK  ] All systems operational.` or a red `[FAILED] GitHub and Azure are having problems.` With more than three services down it's summarised: `5 services are having problems.`
 - Below it, the summary (`27 services, 20 operational, 2 in maintenance, 5 failing`) and one line per failing service: LED, name, status and the title of its worst incident. Each name takes you to its server in the rack.
 
 The title bar shows when the data was last updated (`updated 4 minutes ago`). If it's more than 40 minutes old, it turns orange and warns that updates are running late. It also holds the language switcher (`LANG= es_ES en_US`). The favicon and the tab title change colour with the worst status and show the number of failing services: `(5) uptime`.
@@ -252,7 +252,7 @@ On narrow screens, each server splits into two rows (name, display and pin on to
 |---|---|
 | `#p=github` | The page with GitHub's drawer open and in view |
 | `?lang=es` | The page in Spanish (and remembers it) |
-| `?local` | Reads data from `data/` instead of the `datos` branch (for development) |
+| `?local` | Reads data from `data/` instead of the `data` branch (for development) |
 
 | Key | Where | What it does |
 |---|---|---|
@@ -331,15 +331,15 @@ Commands and options are the same in both languages; answers come in the selecte
 - Each line is capped at 200 characters. Quotes group words (`grep "region availability"`).
 - The output keeps the last 300 lines and scrolls itself; the box has a maximum height so it doesn't push the page around.
 - Until the data has loaded, only `help`, `clear`, `lang`, `echo`, `whoami`, `date`, `history` and `man` work.
-- The first time it's used, `services` reads `data/proveedores.json` (the same file the collector uses) to find out each status page's format.
+- The first time it's used, `services` reads `data/providers.json` (the same file the collector uses) to find out each status page's format.
 - The "did you mean" suggestion uses Levenshtein distance, and only kicks in for a difference of 2 letters or fewer.
-- History is stored in `localStorage` (`uptime.historial`). If the browser won't store it, everything still works during the visit.
+- History is stored in `localStorage` (`uptime.history`). If the browser won't store it, everything still works during the visit.
 
 ---
 
 ## Providers
 
-27 providers in 5 racks. The list lives in [`data/proveedores.json`](data/proveedores.json): adding one that uses a known format is a one-line change.
+27 providers in 5 racks. The list lives in [`data/providers.json`](data/providers.json): adding one that uses a known format is a one-line change.
 
 | Rack | id | Provider | Format | Status page |
 |---|---|---|---|---|
@@ -373,12 +373,12 @@ Commands and options are the same in both languages; answers come in the selecte
 
 ### Supported formats
 
-Every provider publishes its status in its own way. [`actualizar.py`](scripts/actualizar.py) understands seven formats and translates them all into a common one.
+Every provider publishes its status in its own way. [`update.py`](scripts/update.py) understands seven formats and translates them all into a common one.
 
-| `tipo` | What it downloads | What it uses | Used by |
+| `type` | What it downloads | What it uses | Used by |
 |---|---|---|---|
 | `statuspage` | `{url}/api/v2/summary.json` from Atlassian Statuspage | Overall indicator, components (excluding groups), unresolved incidents with their components and latest update, maintenance that isn't completed | 19 providers |
-| `statusio` | `api.status.io/1.0/status/{pagina}` | `status_overall`, components, incidents with their latest message, active and upcoming maintenance | GitLab, Docker Hub |
+| `statusio` | `api.status.io/1.0/status/{page}` | `status_overall`, components, incidents with their latest message, active and upcoming maintenance | GitLab, Docker Hub |
 | `google` | `incidents.json` | Only incidents with no end date that have already started; affected products and locations | Google Cloud, Google Workspace |
 | `azure` | Active incidents RSS feed | Every RSS item is an active incident | Microsoft Azure |
 | `azure-devops` | `/_apis/status/health` | Overall health, and each service's health per geography | Azure DevOps |
@@ -393,33 +393,33 @@ Every provider publishes its status in its own way. [`actualizar.py`](scripts/ac
 
 ### Adding a provider
 
-**If it uses a known format**, all it takes is one line in `data/proveedores.json`:
+**If it uses a known format**, all it takes is one line in `data/providers.json`:
 
 ```json
-{"id": "sentry", "nombre": "Sentry", "categoria": "desarrollo", "tipo": "statuspage",
+{"id": "sentry", "name": "Sentry", "category": "dev", "type": "statuspage",
  "url": "https://status.sentry.io", "web": "https://status.sentry.io"}
 ```
 
 | Field | Required | Purpose |
 |---|---|---|
 | `id` | Yes | Unique identifier, lowercase with hyphens. It's what you type in the terminal and in `#p=` |
-| `nombre` | Yes | Display name |
-| `categoria` | Yes | One of the racks in `categorias`: `nube` (cloud), `desarrollo` (development), `red` (network & CDN), `colaboracion` (collaboration), `ia` (AI) |
-| `tipo` | Yes | One of the seven formats |
+| `name` | Yes | Display name |
+| `category` | Yes | One of the racks in `categories`: `cloud`, `dev` (development), `network` (network & CDN), `collab` (collaboration), `ai` |
+| `type` | Yes | One of the seven formats |
 | `url` | Depends on the format | The page's base URL (Statuspage) or the exact URL to download (all others) |
-| `pagina` | `statusio` only | The page id on status.io |
+| `page` | `statusio` only | The page id on status.io |
 | `web` | Recommended | The page linked for humans |
 
 To check whether a page runs on Statuspage, open `https://its-domain/api/v2/summary.json`. If it returns JSON with `page`, `status` and `components`, it does.
 
-The tests check that every provider has a known `tipo`, an existing `categoria`, a unique `id` and an `https` URL.
+The tests check that every provider has a known `type`, an existing `category`, a unique `id` and an `https` URL.
 
 **If it uses a new format:**
 
-1. Write `procesar_<tipo>(datos, prov)` in `actualizar.py`. It receives the parsed JSON (or raw bytes for non-JSON formats) and returns the [common format](#the-common-provider-format).
-2. If the response doesn't look as expected, raise `FormatoInesperado("what's missing")`: it will be treated as that source being down, without breaking the others.
-3. Finish with `r["estado"] = estado_final(r, indicador, afectados, en_curso)`, which applies the shared rules and places failures on the map.
-4. Register it in `PROCESADORES` (with `True` if the response is JSON) and, if its URL is built rather than given, in `url_de()`.
+1. Write `parse_<type>(data, prov)` in `update.py`. It receives the parsed JSON (or raw bytes for non-JSON formats) and returns the [common format](#the-common-provider-format).
+2. If the response doesn't look as expected, raise `UnexpectedFormat("what's missing")`: it will be treated as that source being down, without breaking the others.
+3. Finish with `r["status"] = final_status(r, indicator, affected, in_progress)`, which applies the shared rules and places failures on the map.
+4. Register it in `PARSERS` (with `True` if the response is JSON) and, if its URL is built rather than given, in `url_for()`.
 5. Add a test class with a sample response: the normal case, an incident and a broken format.
 
 ---
@@ -467,7 +467,7 @@ On top of that, three corrections apply:
 
 </details>
 
-Statuspage phases are translated too: *Investigating*, *Identified*, *Monitoring*, *Resolved*, *Postmortem*, *Scheduled*, *In progress*, *Verifying*, *Completed*.
+Statuspage phases are normalised too, and the Spanish site translates them: *Investigating*, *Identified*, *Monitoring*, *Resolved*, *Postmortem*, *Scheduled*, *In progress*, *Verifying*, *Completed*.
 
 ### When a source fails
 
@@ -480,7 +480,7 @@ stateDiagram-v2
   Failing --> Failing: fewer than 18 failures in a row<br/>(its last good data is kept)
   Failing --> NoData: 18 failures in a row (3 h)<br/>or never responded
   NoData --> Responding: responds again
-  note right of NoData: the issue «Data sources down»<br/>is opened or commented on
+  note right of NoData: the issue «Data sources down»<br/>is opened or commented on,<br/>and closed when it responds again
 ```
 
 - A provider that doesn't respond **doesn't break the others**: each one is fetched separately, and any error ends up on its own card.
@@ -497,13 +497,13 @@ Each run (every 10 minutes) is a **sample**. For each provider and UTC day, thre
 
 | Field | What it counts |
 |---|---|
-| `m` | Samples taken that day |
-| `c` | Samples where the provider was in a partial or major outage |
-| `peor` | The worst status of the day |
+| `samples` | Samples taken that day |
+| `down` | Samples where the provider was in a partial or major outage |
+| `worst` | The worst status of the day |
 
-- **Availability** over a period = 1 − Σc / Σm. Degraded and maintenance don't count against it.
+- **Availability** over a period = 1 − Σdown / Σsamples. Degraded and maintenance don't count against it.
 - Samples where a provider had *no data*, or where its source failed on that run, **don't count**, either way.
-- The **90-day graph** draws one bar per day with the colour and height of `peor`; days with no samples appear as short grey bars.
+- The **90-day graph** draws one bar per day with the colour and height of `worst`; days with no samples appear as short grey bars.
 - The **display percentage** uses every sample from the last 90 days; 99.995% or more is shown as `100%`.
 - The console's **load average** is: services with an outage now / total, and the share of provider-days with an outage over the last 7 and 30 days.
 - The history is trimmed to 90 days on every run.
@@ -514,7 +514,7 @@ One consequence worth knowing: with few samples, the percentage is very sensitiv
 
 ## How failures are placed on the map
 
-Status pages carry no coordinates, but they do carry place names. `actualizar.py` looks for places in the **name of every affected component** (all of them, not just the 12 that are stored), in the **title of every incident** and, where the format provides them, in the **incident's components** (Statuspage), its **affected locations** (Google) and its **region** (AWS). Advisories are never placed.
+Status pages carry no coordinates, but they do carry place names. `update.py` looks for places in the **name of every affected component** (all of them, not just the 12 that are stored), in the **title of every incident** and, where the format provides them, in the **incident's components** (Statuspage), its **affected locations** (Google) and its **region** (AWS). Advisories are never placed.
 
 ### Search order
 
@@ -528,39 +528,39 @@ Status pages carry no coordinates, but they do carry place names. `actualizar.py
 
 Regions, codes and cities **add up**. Countries are only added when there isn't already a city in that same country: `Houston, United States - (IAH)` gives just Houston, while `Edge Delivery issues between Indonesia and Singapore` gives Singapore and Indonesia. Zones are only used when nothing more specific was found.
 
-For each place, uptime stores its **worst level**, how many failures are there (`n`) and **up to 4 examples** of the text that placed it, which are the ones shown on the map. Each provider has at most **80 points**. Anything that can't be placed is counted in `sin_ubicacion`, and the site shows it as *no specific location*.
+For each place, uptime stores its **worst level**, how many failures are there (`n`) and **up to 4 examples** of the text that placed it, which are the ones shown on the map. Each provider has at most **80 points**. Anything that can't be placed is counted in `unlocated`, and the site shows it as *no specific location*.
 
 ### The gazetteer
 
-[`data/geo/lugares_base.json`](data/geo/lugares_base.json) is maintained by hand:
+[`data/geo/places_base.json`](data/geo/places_base.json) is maintained by hand:
 
 <details>
 <summary><b>What the gazetteer contains</b></summary>
 
 | Section | Content |
 |---|---|
-| `ciudades` | 243 cities with data centres or points of presence: `[IATA, English name, Spanish name, ISO-2 country, lat, lon]`. A trailing `"-"` marks ambiguous names (`Córdoba`, `San José`, `Salvador`), which are only matched by their code |
-| `alias_ciudades` | Other names that lead to a city: `Bengaluru`, `Sao Paulo`, `N. Virginia`, `Silicon Valley`, `Iowa`… |
-| `regiones` | 143 AWS, Google Cloud and Azure region ids and names, each mapped to the nearest city |
-| `zonas` and `alias_zonas` | 11 world zones with a representative point, and 17 ways of naming them |
-| `alias_paises` | Short forms of country names |
-| `paises_extra` | Small countries the map doesn't draw (Singapore, Bahrain, Hong Kong, Luxembourg, Malta…) with their coordinates |
+| `cities` | 243 cities with data centres or points of presence: `[IATA, English name, Spanish name, ISO-2 country, lat, lon]`. A trailing `"-"` marks ambiguous names (`Córdoba`, `San José`, `Salvador`), which are only matched by their code |
+| `city_aliases` | Other names that lead to a city: `Bengaluru`, `Sao Paulo`, `N. Virginia`, `Silicon Valley`, `Iowa`… |
+| `regions` | 143 AWS, Google Cloud and Azure region ids and names, each mapped to the nearest city |
+| `zones` and `zone_aliases` | 11 world zones with a representative point, and 17 ways of naming them |
+| `country_aliases` | Short forms of country names |
+| `extra_countries` | Small countries the map doesn't draw (Singapore, Bahrain, Hong Kong, Luxembourg, Malta…) with their coordinates |
 
 </details>
 
-[`scripts/generar_mapa.py`](scripts/generar_mapa.py) merges it with the borders (`mundo.geojson`) and the country names (`paises.json`) and generates two files that are committed to the repository:
+[`scripts/build_map.py`](scripts/build_map.py) merges it with the borders (`world.geojson`) and the country names (`countries.json`) and generates two files that are committed to the repository:
 
-- **`data/lugares.json`** (about 65 KB): the compiled gazetteer the collector uses. Cities are prefixed with `@` (`@FRA` is Frankfurt) so they don't clash with ISO country codes (`FRA` is France); zones are prefixed with `Z:`. Each country gets a centroid, taken from its largest polygon (its mainland).
-- **`data/mapa.json`** (about 6 KB): the world map as an LED matrix. See [its format](#datamapajson).
+- **`data/places.json`** (about 65 KB): the compiled gazetteer the collector uses. Cities are prefixed with `@` (`@FRA` is Frankfurt) so they don't clash with ISO country codes (`FRA` is France); zones are prefixed with `Z:`. Each country gets a centroid, taken from its largest polygon (its mainland).
+- **`data/map.json`** (about 6 KB): the world map as an LED matrix. See [its format](#datamapjson).
 
 If a failure is in a city that isn't listed, it's placed at the centre of its country. To add a city or a region:
 
 ```bash
-# 1. Edit data/geo/lugares_base.json
+# 1. Edit data/geo/places_base.json
 # 2. Regenerate
-python3 scripts/generar_mapa.py
-# mapa: 93×240, 6852 puntos de tierra
-# lugares: 441 (243 ciudades, 143 regiones, 505 nombres de país)
+python3 scripts/build_map.py
+# map: 93×240, 6852 land dots
+# places: 441 (243 cities, 143 regions, 505 country names)
 # 3. Check
 python3 -m unittest discover -s tests
 ```
@@ -577,35 +577,35 @@ Equirectangular, from 82° N to 56° S, cropping the poles (no data centres, and
 
 ```mermaid
 flowchart TB
-  Fuentes["<b>27 official status pages</b><br/>Statuspage, status.io, Google, Azure,<br/>Azure DevOps, AWS, Slack"]
+  Sources["<b>27 official status pages</b><br/>Statuspage, status.io, Google, Azure,<br/>Azure DevOps, AWS, Slack"]
 
   subgraph Actions["GitHub Actions, every 10 min"]
     direction LR
-    A1["actualizar.py<br/>fetches in parallel,<br/>normalises, places,<br/>keeps history"]
-    A2["salud.py<br/>watches the sources"]
+    A1["update.py<br/>fetches in parallel,<br/>normalises, places,<br/>keeps history"]
+    A2["health.py<br/>watches the sources"]
     A1 --> A2
   end
 
   subgraph Main["main branch (code)"]
     direction TB
-    Conf["data/proveedores.json"]
-    Geo["data/lugares.json<br/>data/mapa.json"]
+    Conf["data/providers.json"]
+    Geo["data/places.json<br/>data/map.json"]
     Web["index.html, css/, js/"]
   end
 
-  Datos[("datos branch<br/>estado.json<br/>historial.json<br/>incidencias.json")]
+  Data[("data branch<br/>status.json<br/>history.json<br/>incidents.json")]
   Pages["GitHub Pages<br/>uptime.bendi.dev"]
   Issue["Issue<br/>«Data sources down»"]
   Nav["Browser"]
 
-  Fuentes --> A1
+  Sources --> A1
   Conf --> A1
   Geo --> A1
-  A1 --> Datos
+  A1 --> Data
   A2 -. if a source has been down for 3 h .-> Issue
   Main --> Pages
   Pages --> Nav
-  Datos -- raw.githubusercontent.com --> Nav
+  Data -- raw.githubusercontent.com --> Nav
 ```
 
 ### One run, step by step
@@ -615,7 +615,7 @@ sequenceDiagram
   autonumber
   participant C as Cron, merge or manual
   participant A as Action
-  participant D as datos branch
+  participant D as data branch
   participant F as Status pages
   participant G as Issues
   C->>A: triggers
@@ -642,19 +642,19 @@ flowchart LR
   subgraph Browser
     direction TB
     I18n["i18n.js<br/>es / en strings"]
-    App["app.js<br/>state, loading, pintar()"]
+    App["app.js<br/>state, loading, render()"]
     Term["terminal.js<br/>commands, Tab, history"]
     I18n --> App --> Term
   end
-  Raw["raw.githubusercontent.com<br/>datos branch"] -- "status, history, incidents<br/>every 5 min" --> App
-  Local["same origin<br/>data/"] -- "mapa.json once<br/>proveedores.json for services" --> App
-  App -- "pintar()" --> DOM["console · map · journal · racks<br/>maintenance · history · PSU"]
-  Term -- "irA(), elegirLugar(), elegirIdioma()" --> App
+  Raw["raw.githubusercontent.com<br/>data branch"] -- "status, history, incidents<br/>every 5 min" --> App
+  Local["same origin<br/>data/"] -- "map.json once<br/>providers.json for services" --> App
+  App -- "render()" --> DOM["console · map · journal · racks<br/>maintenance · history · PSU"]
+  Term -- "goTo(), selectPlace(), chooseLanguage()" --> App
 ```
 
-- **`i18n.js`** defines `IDIOMAS.es` and `IDIOMAS.en`, plus `idiomaInicial()`.
-- **`app.js`** keeps everything in a single `estado` object (data, history, incident log, map, language, filters, open drawers, selected place, pins) and has one function per block (`pintarConsola`, `pintarMapa`, `pintarJournal`, `pintarRacks`…), which `pintar()` calls in order. Every data load and every language change repaints everything; small changes (opening a drawer, selecting a place, pinning) only touch their own part.
-- **`terminal.js`** lives inside a closure and builds on `app.js`'s functions. It wraps `pintar()` to repaint its suggestions when the data or the language changes.
+- **`i18n.js`** defines `LANGUAGES.es` and `LANGUAGES.en`, the `localStorage` keys (`STORAGE`) and `initialLanguage()`.
+- **`app.js`** keeps everything in a single `state` object (data, history, incident log, map, language, filters, open drawers, selected place, pins) and has one function per block (`renderConsole`, `renderMap`, `renderJournal`, `renderRacks`…), which `render()` calls in order. Every data load and every language change repaints everything; small changes (opening a drawer, selecting a place, pinning) only touch their own part.
+- **`terminal.js`** lives inside a closure and builds on `app.js`'s functions. It wraps `render()` to repaint its suggestions when the data or the language changes.
 - No frameworks, no build step, no dependencies: three classic scripts, one stylesheet and one HTML file.
 
 ### Design decisions
@@ -665,7 +665,7 @@ flowchart LR
 | **One common format** | The site knows nothing about Statuspage or RSS; adding a format doesn't touch the site | Teaching the site every format |
 | **The worst signal wins** | Some providers are slow to move their overall indicator | Trusting the overall indicator |
 | **Scope matters** | Without it, Cloudflare would always be red | Flagging an outage for any component |
-| **Data on a separate branch** | `main` only gets code changes through PRs; `datos` is a single commit that gets replaced, so it never grows | Committing data to `main` every 10 minutes |
+| **Data on a separate branch** | `main` only gets code changes through PRs; `data` is a single commit that gets replaced, so it never grows | Committing data to `main` every 10 minutes |
 | **raw.githubusercontent.com** | Data updates without redeploying Pages, and without CORS issues | Publishing the data through Pages |
 | **Our own history** | No public format offers 90 days of history consistently | Reading each provider's history |
 | **A hand-made gazetteer** | No runtime dependencies or geocoding services, and full control over ambiguous names | A geocoding API |
@@ -681,7 +681,7 @@ flowchart LR
 
 | Workflow | When | What it does | Permissions |
 |---|---|---|---|
-| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`7,17,27,37,47,57 * * * *`); when changes to `scripts/`, `data/proveedores.json`, `data/lugares.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `datos` and opens an issue if a source has been down for a while | `contents: write`, `issues: write` |
+| [`update-data.yml`](.github/workflows/update-data.yml) (*Update data*) | Every 10 minutes (`7,17,27,37,47,57 * * * *`); when changes to `scripts/`, `data/providers.json`, `data/places.json` or the workflow itself are merged into `main`; and manually | Restores the previous data, reads the status pages, publishes to `data`, and opens or closes the *Data sources down* issue | `contents: write`, `issues: write` |
 | [`tests.yml`](.github/workflows/tests.yml) (*Tests*) | On every PR to `main` | `python -m unittest discover -s tests -v`. Its *Unit tests* check is required: a PR can't be merged until it passes | Defaults |
 | `pages-build-deployment` | When `main` changes | GitHub Pages deployment | GitHub's |
 
@@ -699,15 +699,15 @@ flowchart TB
   Fix --> Dev
   Tests -- green --> Merge["Merge into main"]
   Merge --> Pages["pages-build-deployment<br/>publishes the site"]
-  Merge --> Changed{"Did scripts/, proveedores.json,<br/>lugares.json or update-data.yml change?"}
+  Merge --> Changed{"Did scripts/, providers.json,<br/>places.json or update-data.yml change?"}
   Changed -- yes --> Update
   Changed -- no --> Wait["Wait for the next cron slot"]
   Wait --> Update
   Cron["Cron, every 10 min"] --> Update["Update data"]
   Manual["Run workflow (manual)"] --> Update
-  Update --> Datos[("datos branch")]
+  Update --> Data[("data branch")]
   Update -. a source down for 3 h .-> Issue["Issue «Data sources down»"]
-  Datos --> Site["The site reloads the data<br/>every 5 minutes"]
+  Data --> Site["The site reloads the data<br/>every 5 minutes"]
 ```
 
 | Moment | What runs | What it guarantees |
@@ -717,8 +717,8 @@ flowchart TB
 | Red tests | The PR can't be merged | `main` never gets code that breaks the collector |
 | Merge into `main` | *pages-build-deployment*, and *Update data* if the collector, the config, the gazetteer or the workflow changed | The site and the data reflect the new code within a minute |
 | Every 10 minutes | *Update data* | Fresh data, 90 days of history and incidents opened and closed |
-| Manually | *Update data* (with *publish* unticked, to `datos-prueba`) | Testing with real data without touching the site |
-| A source down for 3 hours | *Update data* opens or comments on the *Data sources down* issue | Nobody has to keep an eye on the log |
+| Manually | *Update data* (with *publish* unticked, to `data-test`) | Testing with real data without touching the site |
+| A source down for 3 hours | *Update data* opens or comments on the *Data sources down* issue, and closes it when the source is back | Nobody has to keep an eye on the log |
 
 The guarantee that red tests block a merge comes from a ruleset on `main` (see [Setting it up](#setting-it-up), step 6); the workflow alone only reports.
 
@@ -730,29 +730,37 @@ gitGraph
   branch development
   checkout development
   commit id: "change"
-  commit id: "tests pass"
+  commit id: "more work"
   checkout main
-  merge development id: "PR"
-  branch datos
-  checkout datos
+  merge development id: "PR, tests green"
+  branch data
+  checkout data
   commit id: "data, replaced every 10 min"
 ```
 
 | Branch | Content | Written by |
 |---|---|---|
-| `development` | Where work happens | People |
+| `development` | Where work happens. Protected against deletion and force pushes | People |
 | `main` | What Pages serves and what the cron runs. Only takes changes through PRs, and only once the tests pass | PRs from `development` |
-| `datos` | The Action's output: a single orphan commit replaced with a *force push* | `github-actions[bot]` |
-| `datos-prueba` | Same as `datos`, for test runs. The site doesn't read it | `github-actions[bot]` |
+| `data` | The Action's output: a single orphan commit replaced with a *force push* | `github-actions[bot]` |
+| `data-test` | Same as `data`, for test runs. The site doesn't read it | `github-actions[bot]` |
 
 ### Setting it up
 
 1. Create the repository and push `main` with the code.
 2. Settings → Pages → *Deploy from a branch* → `main`, folder `/` (root).
 3. Custom domain: the [`CNAME`](CNAME) file says `uptime.bendi.dev`. In DNS, a `CNAME` record from `uptime` to `serbenda.github.io` (with Cloudflare, set to *DNS only* so GitHub can issue the certificate); then, in Settings → Pages, tick *Enforce HTTPS*. Without a custom domain, the site lives at `serbenda.github.io/uptime`, or at `<user domain>/uptime` if the account's user site has one.
-4. Actions → *Update data* → *Run workflow*, to create the `datos` branch without waiting for the cron.
+4. Actions → *Update data* → *Run workflow*, to create the `data` branch without waiting for the cron.
 5. Check that the site loads and the console bar says `updated … ago`.
-6. Protect `main` with a ruleset (Settings → Rules → Rulesets → *New branch ruleset*): target `main`, enforcement *Active*, and tick *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals) and *Require status checks to pass* with the *Unit tests* check. From then on `main` only changes through a PR with green tests. Don't add rules for `datos`: the Action force-pushes to it.
+6. Protect the branches with two rulesets (Settings → Rules → Rulesets → *New branch ruleset*):
+
+   | Ruleset | Target | Rules |
+   |---|---|---|
+   | `main: PR with passing tests` | `main` (*Include default branch*) | *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (0 approvals), *Require status checks to pass* with the *Unit tests* check |
+   | `development: no force push` | `development` (*Include by pattern*: `development`) | *Restrict deletions*, *Block force pushes* |
+
+   Both with enforcement *Active* and no bypass list. From then on `main` only changes through a PR with green tests, and `development` can't be deleted or rewritten. Don't add rules for `data` or `data-test`: the Action force-pushes to them.
+7. Settings → General → *Social preview* → *Edit* → upload [`docs/logo/social.png`](docs/logo/social.png), so links to the repository show the logo on the LED map.
 
 No secrets or variables are needed: every source is public.
 
@@ -761,10 +769,10 @@ No secrets or variables are needed: every source is public.
 | Risk | Mitigation |
 |---|---|
 | A provider doesn't respond | Its last good data is kept and its card says so |
-| A provider changes its format | It raises `FormatoInesperado` and is treated as that source being down, without breaking the rest |
-| A source is down for a long time | After 18 runs in a row (3 hours), `salud.py` opens or comments on the *Data sources down* issue |
+| A provider changes its format | It raises `UnexpectedFormat` and is treated as that source being down, without breaking the rest |
+| A source is down for a long time | After 18 runs in a row (3 hours), `health.py` opens the *Data sources down* issue, or comments on it if it's already open. Once every source responds again, the Action closes it with a comment |
 | No source responds | Almost certainly the runner's network: the Action fails without publishing |
-| `datos` can't be read | The Action fails before publishing: it never overwrites the history with empty data |
+| `data` can't be read | The Action fails before publishing: it never overwrites the history with empty data |
 | Half-written files | Each file is written to a `.tmp` and then renamed |
 | Two runs at once | `concurrency: update-data` queues them |
 | GitHub's cron runs late or skips runs | The Action runs after every merge, can be run manually, and the site warns when data is more than 40 minutes old |
@@ -774,11 +782,11 @@ No secrets or variables are needed: every source is public.
 
 ### Testing changes with real data without touching the site
 
-Actions → *Update data* → *Run workflow* → branch `development`, with **publish** unticked. The data is written to `datos-prueba`:
+Actions → *Update data* → *Run workflow* → branch `development`, with **publish** unticked. The data is written to `data-test`:
 
 ```bash
-git fetch origin datos-prueba
-git show origin/datos-prueba:data/estado.json | python3 -m json.tool | less
+git fetch origin data-test
+git show origin/data-test:data/status.json | python3 -m json.tool | less
 ```
 
 ### What it writes to the log
@@ -791,7 +799,7 @@ Every run leaves one line per provider in the Action's log:
 [ERR] OpenAI                   no data         0 incidents  TimeoutError: timed out
 ```
 
-And `salud.py` prints either `All sources are responding.` or the issue's table:
+And `health.py` prints either `All sources are responding.` or the issue's table:
 
 | Provider | Error | Failures in a row | Last good data |
 |---|---|---|---|
@@ -803,7 +811,7 @@ And `salud.py` prints either `All sources are responding.` or the issue's table:
 |---|---|---|
 | GitHub Actions | About 144 runs a day, under a minute each | Free for public repositories |
 | GitHub Pages | About 90 KB of site, including the map | Free |
-| `datos` branch | About 250 KB with 90 days of history; it doesn't grow, since it's a single commit | Free |
+| `data` branch | About 250 KB with 90 days of history; it doesn't grow, since it's a single commit | Free |
 | Requests to providers | 27 every 10 minutes, with a `User-Agent` that identifies the project | Status pages are public and meant for this |
 
 ### Troubleshooting
@@ -812,11 +820,11 @@ And `salud.py` prints either `All sources are responding.` or the issue's table:
 |---|---|
 | The site says data is running late | Actions → *Update data*: are there recent runs? GitHub's cron sometimes skips runs; trigger it manually. |
 | There are only `push` and `workflow_dispatch` runs, never `schedule` | GitHub hasn't registered the cron, which sometimes happens with new repositories. Run the workflow manually once; if it still doesn't show up, change the cron minute in `update-data.yml` and merge it into `main`. Also, GitHub disables scheduled workflows in repositories with no activity for 60 days: a commit re-enables them. |
-| The *Data sources down* issue appears | The issue says which provider and which error. If it's *formato inesperado* (unexpected format), its page has changed and its parser or `tipo` needs updating. If it's HTTP 404, its address may have changed. |
+| The *Data sources down* issue appears | The issue says which provider and which error, and gets a new comment on every run while it lasts. It closes itself when every source responds again; you don't need to close it. If it's *unexpected format*, its page has changed and its parser or `type` needs updating. If it's HTTP 404, its address may have changed. |
 | A provider's status doesn't match its website | Check its drawer: it may be the worst-signal rule (a component down with the indicator green) or the scope rule. |
-| The map shows no dots | Is anything failing? If so, and everything is under *no specific location*, the names contain no recognisable places. If a city is missing, add it to `lugares_base.json`. |
+| The map shows no dots | Is anything failing? If so, and everything is under *no specific location*, the names contain no recognisable places. If a city is missing, add it to `places_base.json`. |
 | A dot sits in the middle of a country | Its city isn't in the gazetteer: add it with its IATA code. |
-| The site doesn't load data | Check that the `datos` branch exists, and check the `<meta name="uptime-datos">` tag in `index.html`. |
+| The site doesn't load data | Check that the `data` branch exists, and check the `<meta name="uptime-data">` tag in `index.html`. |
 | The site looks broken after a deploy | Bump the `?v=N` number in `index.html`. |
 | The terminal says *offline* | The data hasn't loaded: same problem as the row above. |
 
@@ -829,24 +837,26 @@ And `salud.py` prints either `All sources are responding.` or the issue's table:
 ```
 uptime/
 ├── index.html                    Single page
-├── css/estilo.css                Styles: room, console, terminal, map, racks, drawers and PSU
+├── css/style.css                 Styles: room, console, terminal, map, racks, drawers and PSU
 ├── js/
-│   ├── i18n.js                   English and Spanish strings, and the initial language
+│   ├── i18n.js                   English and Spanish strings, storage keys and the initial language
 │   ├── app.js                    State, loading, console, map, journal, racks, drawers, filters and notifications
 │   └── terminal.js               The console's command line
 ├── data/
-│   ├── proveedores.json          What is queried and in which format
-│   ├── mapa.json                 World map as an LED matrix (generated)
-│   ├── lugares.json              Compiled gazetteer (generated)
+│   ├── providers.json            What is queried and in which format
+│   ├── map.json                  World map as an LED matrix (generated)
+│   ├── places.json               Compiled gazetteer (generated)
 │   └── geo/
-│       ├── lugares_base.json     Cities, regions, zones and aliases (hand-made)
-│       ├── mundo.geojson         Borders of 180 countries (public domain)
-│       └── paises.json           ISO 3166 names in English and Spanish
+│       ├── places_base.json      Cities, regions, zones and aliases (hand-made)
+│       ├── world.geojson         Borders of 180 countries (public domain)
+│       └── countries.json        ISO 3166 names in English and Spanish
 ├── scripts/
-│   ├── actualizar.py             Fetches, normalises, places and keeps the history
-│   ├── generar_mapa.py           Builds mapa.json and lugares.json from data/geo/
-│   └── salud.py                  Report of failing sources, for the issue
-├── tests/test_actualizar.py      Tests with sample responses for each format
+│   ├── update.py                 Fetches, normalises, places and keeps the history
+│   ├── build_map.py              Builds map.json and places.json from data/geo/
+│   ├── build_brand.py            Builds the logo, mark, favicon and animated terminal in docs/logo/
+│   ├── screenshots.py            Takes the README screenshots and the social preview (needs a browser)
+│   └── health.py                 Report of failing sources, for the issue
+├── tests/test_update.py          Tests with sample responses for each format
 ├── docs/
 │   ├── logo/                     Logo, mark, favicon, social preview and the animated terminal
 │   └── screenshots/              Screenshots for this README
@@ -855,23 +865,88 @@ uptime/
     └── FUNDING.yml               The repository's Sponsor button
 ```
 
-The code is written in Spanish (identifiers, comments and commit messages), the same as atalaya. The glossary below translates the names you'll meet most often.
+Everything in the code is in English: file names, identifiers, comments, log messages and data keys. Only the site's Spanish strings (in `js/i18n.js`) and the Spanish aliases the terminal accepts (`ayuda`, `servicios`, `salir`…) are in Spanish.
+
+There's no generated data on `main`: `status.json`, `history.json` and `incidents.json` are in `.gitignore` and live on the `data` branch.
 
 <details>
-<summary><b>Glossary: Spanish names in the code</b></summary>
+<summary><b>Coming from the Spanish version of the code</b></summary>
 
-| Spanish | English |
+Until November 2026 the code, the data keys and the data branch had Spanish names. The switch is automatic and needs nothing by hand:
+
+| Before | Now |
 |---|---|
-| `actualizar` · `datos` · `pruebas` · `salud` | update · data · tests · health |
-| `proveedor` · `fuente` · `incidencia` · `mantenimiento` · `componente` | provider · source · incident · maintenance · component |
-| `estado` · `nivel` · `peor` · `operativo` · `degradado` · `parcial` · `grave` · `desconocido` · `aviso` | status · level · worst · operational · degraded · partial · major · unknown · advisory |
-| `historial` · `muestras` · `caídas` | history · samples · outages |
-| `lugar` · `ciudad` · `país` · `zona` · `mapa` · `ubicar` | place · city · country · zone · map · locate |
-| `pintar` · `cajón` · `fijado` · `idioma` · `orden` | render · drawer · pinned · language · command |
+| `datos` branch · `datos-prueba` branch | `data` branch · `data-test` branch |
+| `estado.json` · `historial.json` · `incidencias.json` | `status.json` · `history.json` · `incidents.json` |
+| `proveedores.json` · `lugares.json` · `mapa.json` | `providers.json` · `places.json` · `map.json` |
+| `actualizar.py` · `salud.py` · `generar_mapa.py` · `generar_marca.py` · `capturas.py` | `update.py` · `health.py` · `build_map.py` · `build_brand.py` · `screenshots.py` |
+| Levels `operativo` · `mantenimiento` · `degradado` · `parcial` · `grave` · `desconocido` · `aviso` | `operational` · `maintenance` · `degraded` · `partial` · `major` · `unknown` · `advisory` |
+| Racks `nube` · `desarrollo` · `red` · `colaboracion` · `ia` | `cloud` · `dev` · `network` · `collab` · `ai` |
+| `UPTIME_SALIDA` | `UPTIME_OUTPUT` |
+
+- **The Action** restores from `data`, and if it doesn't exist yet, from `datos`. `update.py` reads any file it finds under its old name, converts it to the new format (keeping the 90 days of history, the open incidents and each source's failure count), writes the new files and deletes the old ones. From then on `datos` is no longer read, and it can be deleted along with `datos-prueba`.
+- **The site** reads the `data` branch, and falls back to `datos` (converting it in the browser) until the first run after the merge has created it.
+- **The browser** keeps your choices: the language, pins and terminal history are read from their old `localStorage` keys if the new ones are empty.
 
 </details>
 
-There's no generated data on `main`: `estado.json`, `historial.json` and `incidencias.json` are in `.gitignore` and live on the `datos` branch.
+### Making a change, step by step
+
+Every change follows the same path, from `development` to the live site:
+
+```bash
+# 1. Start from the latest development
+git checkout development
+git pull
+
+# 2. Make the change, then run the tests
+python3 -m unittest discover -s tests -v
+
+# 3. Try it in the browser with real data (see Running it locally)
+python3 -m http.server 8000
+
+# 4. Commit and push to development (nothing runs on GitHub yet)
+git add -A
+git commit -m "What changes and why"
+git push origin development
+```
+
+5. On GitHub, open a PR from `development` to `main`. *Tests* runs and adds the *Unit tests* check.
+6. If it's red, fix it on `development` and push again: the PR updates itself and the check runs again. A red PR can't be merged.
+7. When it's green, merge it. *pages-build-deployment* publishes the site, and *Update data* runs straight away if the collector, the config, the gazetteer or the workflow changed.
+8. Check [uptime.bendi.dev](https://uptime.bendi.dev): the console bar should say `updated … ago`. If the change touched the data, also check the latest *Update data* run in Actions.
+
+Before committing, check this list against what you've changed:
+
+| If you changed… | Also do this |
+|---|---|
+| `css/` or `js/` | Bump the file's `?v=N` in `index.html`, so browsers don't mix versions |
+| A text on the site | Change it in both `es` and `en` in `js/i18n.js` |
+| `data/providers.json` | Nothing else: the tests check it and the next run picks it up |
+| `data/geo/` | `python3 scripts/build_map.py`, and commit `data/map.json` and `data/places.json` too |
+| The collector's rules or a parser | Add or update a test in `tests/test_update.py` |
+| The logo, the mark or the animated terminal | `python3 scripts/build_brand.py` |
+| How the site looks | `python3 scripts/screenshots.py`, so the README screenshots match |
+| A workflow | Its documentation in [Operations](#operations) |
+| Anything users or maintainers would notice | This README |
+
+### Regenerating the brand and the screenshots
+
+Everything in `docs/` can be rebuilt from the repository:
+
+```bash
+# Logo, mark, favicon and animated terminal (standard library only)
+python3 scripts/build_brand.py
+
+# README screenshots and social preview: they need a browser, and look best with real data
+pip install playwright pillow
+playwright install chromium
+git fetch origin data
+for f in status history incidents; do git show origin/data:data/$f.json > data/$f.json; done
+python3 scripts/screenshots.py
+```
+
+`build_brand.py` draws everything from code (the word is made of stroked paths, so no font is involved) and is deterministic: running it on an unchanged repository changes nothing. `screenshots.py` serves the site locally, opens it in headless Chromium in English and Spanish, on desktop and mobile, types a few commands into the terminal, and saves every screenshot as WebP. It also renders the 1280 × 640 social preview with the LED map and the failures in your local `data/status.json`. If the favicon changes, copy its drawing to the `<link rel="icon">` in `index.html` and to `renderConsole()` in `js/app.js`, where its LED is coloured by status. After regenerating the social preview, upload it again under Settings → *Social preview*.
 
 ### Running it locally
 
@@ -879,98 +954,99 @@ There's no generated data on `main`: `estado.json`, `historial.json` and `incide
 # Tests
 python3 -m unittest discover -s tests -v
 
-# Real data (writes estado.json, historial.json and incidencias.json to data/)
-python3 scripts/actualizar.py
+# Real data (writes status.json, history.json and incidents.json to data/)
+python3 scripts/update.py
 
 # Or the published data, without querying anyone
-git fetch origin datos
-for f in estado historial incidencias; do git show origin/datos:data/$f.json > data/$f.json; done
+git fetch origin data
+for f in status history incidents; do git show origin/data:data/$f.json > data/$f.json; done
 
-# Site: on localhost it reads data/ instead of the datos branch
+# Site: on localhost it reads data/ instead of the data branch
 python3 -m http.server 8000      # http://localhost:8000
 
 # If you change data/geo/
-python3 scripts/generar_mapa.py
+python3 scripts/build_map.py
 ```
 
-`UPTIME_SALIDA=/path` changes where `actualizar.py` writes (the Action uses it to write into its copy of the `datos` branch).
+`UPTIME_OUTPUT=/path` changes where `update.py` writes (the Action uses it to write into its copy of the `data` branch).
 
 ### Constants
 
 <details>
 <summary><b>All tunable constants, in the collector and in the site</b></summary>
 
-In [`actualizar.py`](scripts/actualizar.py):
+In [`update.py`](scripts/update.py):
 
 | Constant | Value | Purpose |
 |---|---|---|
-| `DIAS_HISTORIAL` | 90 | Days of daily history |
-| `DIAS_INCIDENCIAS` | 30 | Days closed incidents are kept |
-| `FALLOS_PARA_AVISAR` | 18 | Failed runs in a row (3 h) before a source becomes *no data* and the issue is opened |
-| `ALCANCE_MINIMO` | 0.05 | Share of components below which the *degraded* cap applies |
-| `COMPONENTES_MINIMOS` | 20 | Minimum number of components for that rule |
-| `MAX_COMPONENTES` | 12 | Affected components stored per provider |
-| `MAX_TEXTO` | 600 | Characters kept from each incident's latest message |
-| `MAX_LUGARES` | 80 | Map points per provider |
-| `MAX_EJEMPLOS` | 4 | Source texts stored per point |
-| `TIEMPO_ESPERA` | 20 | Seconds per download |
-| `REINTENTOS` | 2 | Retries per download |
-| `AGENTE` | `uptime/1.0 (+https://github.com/serbenda/uptime)` | Requests' `User-Agent` |
+| `HISTORY_DAYS` | 90 | Days of daily history |
+| `INCIDENT_DAYS` | 30 | Days closed incidents are kept |
+| `FAILURES_BEFORE_ALERT` | 18 | Failed runs in a row (3 h) before a source becomes *no data* and the issue is opened |
+| `MIN_SCOPE` | 0.05 | Share of components below which the *degraded* cap applies |
+| `MIN_COMPONENTS` | 20 | Minimum number of components for that rule |
+| `MAX_COMPONENTS` | 12 | Affected components stored per provider |
+| `MAX_TEXT` | 600 | Characters kept from each incident's latest message |
+| `MAX_PLACES` | 80 | Map points per provider |
+| `MAX_EXAMPLES` | 4 | Source texts stored per point |
+| `TIMEOUT` | 20 | Seconds per download |
+| `RETRIES` | 2 | Retries per download |
+| `USER_AGENT` | `uptime/1.0 (+https://github.com/serbenda/uptime)` | Requests' `User-Agent` |
 
 In the site:
 
 | Constant | Where | Value | Purpose |
 |---|---|---|---|
-| `REFRESCO_MS` | `app.js` | 5 min | How often data is reloaded |
-| `VIEJO_MIN` | `app.js` | 40 min | When to warn that data is running late |
-| `DIAS` | `app.js` | 90 | Bars in each server's graph |
-| `LIMITE` | `app.js` | 8 | Incidents shown before *more entries* |
-| `POR_PROVEEDOR` | `app.js` | 3 | Maintenance windows shown per provider |
-| `MAX_NODOS` | `terminal.js` | 300 | Output lines kept by the terminal |
+| `REFRESH_MS` | `app.js` | 5 min | How often data is reloaded |
+| `STALE_MIN` | `app.js` | 40 min | When to warn that data is running late |
+| `DAYS` | `app.js` | 90 | Bars in each server's graph |
+| `LIMIT` | `app.js` | 8 | Incidents shown before *more entries* |
+| `PER_PROVIDER` | `app.js` | 3 | Maintenance windows shown per provider |
+| `MAX_NODES` | `terminal.js` | 300 | Output lines kept by the terminal |
 
 </details>
 
 ### The common provider format
 
-This is what every `procesar_<tipo>()` returns and what the site reads. `vacio()` provides the template.
+This is what every `parse_<type>()` returns and what the site reads. `empty()` provides the template.
 
 ```python
 {
-  "estado": "operativo|mantenimiento|degradado|parcial|grave",
-  "resumen": "text published by the provider, or ''",
-  "componentes": [{"nombre": "…", "estado": "…"}],       # affected only, at most 12
-  "total_componentes": 0,                                # 0 if the format has no components
-  "afectados": 0,                                        # filled in by estado_final()
-  "alcance_limitado": False,                             # filled in by estado_final()
-  "incidencias": [{
-      "id": "…", "titulo": "…", "impacto": "aviso|degradado|parcial|grave",
-      "fase": "Investigando…", "inicio": "ISO", "actualizado": "ISO",
-      "mensaje": "latest message", "enlace": "https://…",
-      "afecta": ["product"],                             # optional
-      "lugares_texto": ["text with places"],             # optional, only used to place it; not stored
+  "status": "operational|maintenance|degraded|partial|major",
+  "description": "text published by the provider, or ''",
+  "components": [{"name": "…", "status": "…"}],          # affected only, at most 12
+  "total_components": 0,                                # 0 if the format has no components
+  "affected": 0,                                        # filled in by final_status()
+  "limited_scope": False,                               # filled in by final_status()
+  "incidents": [{
+      "id": "…", "title": "…", "impact": "advisory|degraded|partial|major",
+      "phase": "Investigating…", "started": "ISO", "updated": "ISO",
+      "message": "latest message", "link": "https://…",
+      "affects": ["product"],                           # optional
+      "place_texts": ["text with places"],              # optional, only used to place it; not stored
   }],
-  "mantenimientos": [{"id": "…", "titulo": "…", "fase": "…", "en_curso": False,
-                      "inicio": "ISO", "fin": "ISO", "enlace": "https://…"}],
-  "lugares": [],                                         # filled in by estado_final()
-  "sin_ubicacion": 0,                                    # filled in by estado_final()
+  "maintenance": [{"id": "…", "title": "…", "phase": "…", "in_progress": False,
+                   "start": "ISO", "end": "ISO", "link": "https://…"}],
+  "places": [],                                         # filled in by final_status()
+  "unlocated": 0,                                       # filled in by final_status()
 }
 ```
 
 ### Tests
 
-[`tests/test_actualizar.py`](tests/test_actualizar.py) has 33 `unittest` tests built on sample responses for each format. They don't connect to anything: if a provider changes its format, these tests won't notice, but the Action will (it flags it as *formato inesperado* and, if it persists, opens the issue).
+[`tests/test_update.py`](tests/test_update.py) has 37 `unittest` tests built on sample responses for each format. They don't connect to anything: if a provider changes its format, these tests won't notice, but the Action will (it flags it as an *unexpected format* and, if it persists, opens the issue).
 
 <details>
 <summary><b>What each test class covers</b></summary>
 
 | Class | What it checks |
 |---|---|
-| `TestUtilidades` | The level scale, dates (ISO, RFC 822, seconds and milliseconds since 1970), HTML stripping and UTF-16 JSON |
+| `TestHelpers` | The level scale, dates (ISO, RFC 822, seconds and milliseconds since 1970), HTML stripping and UTF-16 JSON |
 | `TestStatuspage` | All clear, incidents and components, groups not counting, maintenance, broken format, the scope rule and advisories (by impact and by title) |
 | `TestStatusio`, `TestGoogle`, `TestAzure`, `TestAzureDevOps`, `TestAws`, `TestSlack` | Each format: normal case, incidents, empty and broken; for Azure DevOps, that maintenance doesn't count as degraded |
-| `TestUbicacion` | 13 real-world texts with their expected result (Cloudflare, Linode, AWS, Google, Azure, Akamai, acronyms that aren't airports…), that the gazetteer has no broken references, and that `localizar()` merges, ranks and skips advisories |
-| `TestConsulta` | URLs, that a network or format error doesn't break anything, and that every provider in the config is valid |
-| `TestPersistencia` | That a failing source keeps its data and becomes *no data* on time, that history is trimmed and doesn't count what wasn't measured, and that incidents open and close (and don't close when the source fails) |
+| `TestPlaces` | 13 real-world texts with their expected result (Cloudflare, Linode, AWS, Google, Azure, Akamai, acronyms that aren't airports…), that the gazetteer has no broken references, and that `place_failures()` merges, ranks and skips advisories |
+| `TestFetching` | URLs, that a network or format error doesn't break anything, and that every provider in the config is valid |
+| `TestPersistence` | That a failing source keeps its data and becomes *no data* on time, that history is trimmed and doesn't count what wasn't measured, and that incidents open and close (and don't close when the source fails) |
+| `TestMigration` | That files with the old Spanish names are converted (history, incidents, each source's failure count), that new files win over old ones, and that the old ones are deleted |
 
 </details>
 
@@ -981,33 +1057,35 @@ The site has no automated tests; it's checked in the browser, on desktop and mob
 Every string on the site lives in [`js/i18n.js`](js/i18n.js), with both versions side by side:
 
 - Fixed text in the HTML carries `data-i18n="key"` (content), `data-i18n-aria="key"` (`aria-label`) or `data-i18n-ph="key"` (`placeholder`).
-- Sentences with data in them are functions, so each language can order its words and handle plurals its own way: `con_problemas: (nombres, n) => \`${nombres} ${n === 1 ? "is" : "are"} having problems.\``.
+- Sentences with data in them are functions, so each language can order its words and handle plurals its own way: `having_problems: (names, n) => \`${names} ${n === 1 ? "is" : "are"} having problems.\``.
 - The terminal has its own block, `term`, with each command's description and usage.
 
-To add a string, add the same key to both `es` and `en`. To add a language, copy the `en` block under a new code, translate it and add its button to the console's switcher; `idiomaInicial()` and everything else pick it up automatically.
+To add a string, add the same key to both `es` and `en`. To add a language, copy the `en` block under a new code, translate it and add its button to the console's switcher; `initialLanguage()` and everything else pick it up automatically.
 
 ### Design
 
 | Token | Value | Used for |
 |---|---|---|
-| `--sala` | `#0F151B` | Background, with a faint raised-floor grid |
+| `--room` | `#0F151B` | Background, with a faint raised-floor grid |
 | `--metal` | `#18212A` | Rack frames |
-| `--frontal` | `#222D38` | Server faces |
+| `--face` | `#222D38` | Server faces |
 | `--terminal` | `#0A1016` | Console, drawers, journal, map |
-| `--tinta` | `#DCE6EE` | Main text |
+| `--ink` | `#DCE6EE` | Main text |
 | `--prompt` | `#6FB7FF` | Prompt, terminal links, focus |
-| `--operativo` · `--mantenimiento` · `--degradado` · `--parcial` · `--grave` · `--desconocido` · `--aviso` | `#43D17F` · `#5AA9FF` · `#F2C230` · `#FF8A2A` · `#FF4D4D` · `#6B7885` · `#B79CFF` | The LEDs |
+| `--operational` · `--maintenance` · `--degraded` · `--partial` · `--major` · `--unknown` · `--advisory` | `#43D17F` · `#5AA9FF` · `#F2C230` · `#FF8A2A` · `#FF4D4D` · `#6B7885` · `#B79CFF` | The LEDs |
 
 - **Logo**: the word *uptime* is drawn by hand as stroked paths (no font needed, so it renders the same everywhere), and the dot on the **i** is the status LED. Next to it, the mark: a 1U server with its LED and the 90-day bars, the most uptime-specific element on the site.
 
   | File | Use |
   |---|---|
-  | [`docs/logo/uptime-oscuro.svg`](docs/logo/uptime-oscuro.svg) | Logo for dark backgrounds. The site inlines it at the top, with both LEDs coloured by the worst status |
-  | [`docs/logo/uptime-claro.svg`](docs/logo/uptime-claro.svg) | Logo for light backgrounds |
-  | [`docs/logo/uptime-marca.svg`](docs/logo/uptime-marca.svg) | Square mark, for avatars |
-  | [`docs/logo/uptime-favicon.svg`](docs/logo/uptime-favicon.svg) | Simplified mark for 16–32 px; on the site its LED takes the colour of the worst status |
-  | [`docs/logo/uptime-social.png`](docs/logo/uptime-social.png) | 1280 × 640 preview for links (Open Graph), with the LED map |
+  | [`docs/logo/logo-dark.svg`](docs/logo/logo-dark.svg) | Logo for dark backgrounds. The site inlines it at the top, with both LEDs coloured by the worst status |
+  | [`docs/logo/logo-light.svg`](docs/logo/logo-light.svg) | Logo for light backgrounds |
+  | [`docs/logo/mark.svg`](docs/logo/mark.svg) | Square mark, for avatars |
+  | [`docs/logo/favicon.svg`](docs/logo/favicon.svg) | Simplified mark for 16–32 px; on the site its LED takes the colour of the worst status |
+  | [`docs/logo/social.png`](docs/logo/social.png) | 1280 × 640 preview for links (Open Graph), with the LED map |
   | [`docs/logo/terminal.svg`](docs/logo/terminal.svg) | The animated terminal at the top of this README (CSS animation, respects reduced motion) |
+
+  The SVGs come from [`build_brand.py`](scripts/build_brand.py) and the PNG from [`screenshots.py`](scripts/screenshots.py): see [Regenerating the brand and the screenshots](#regenerating-the-brand-and-the-screenshots).
 
 - **Type**: [Archivo](https://fonts.google.com/specimen/Archivo), with variable width (narrow in the verdict and headings), for labels; [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) for anything that comes out of a terminal.
 - **Colour means something**: bright colours are reserved for LEDs and statuses; everything else is metal and ink.
@@ -1016,76 +1094,74 @@ To add a string, add the same key to both `es` and `en`. To add a language, copy
 ### Conventions
 
 - Python 3.12, standard library only. JavaScript with no frameworks and no build step.
-- Code, comments and commit messages in Spanish; documentation in English. Provider ids are lowercase with hyphens.
+- Code, comments, data keys and documentation in English; the site's text in English and Spanish. Provider ids are lowercase with hyphens.
 - Work happens on `development`; `main` is only reached through PRs.
 - If you change CSS or JS, bump the `?v=N` in `index.html`.
-- If you change `data/geo/`, regenerate with `generar_mapa.py` and commit the generated files too.
+- If you change `data/geo/`, regenerate with `build_map.py` and commit the generated files too.
 
 ---
 
 ## Data formats
 
-Field names are in Spanish, like the code (see the [glossary](#layout)).
+### On the `data` branch
 
-### On the `datos` branch
-
-#### `estado.json`
+#### `status.json`
 
 <details>
 <summary><b>Full example and field reference</b></summary>
 
 ```json
 {
-  "actualizado": "2026-11-02T15:53:36Z",
-  "categorias": {"nube": "Nube", "desarrollo": "Desarrollo", "red": "Red y CDN", "colaboracion": "Colaboración", "ia": "IA"},
-  "resumen": {"total": 27, "con_problemas": 5, "peor": "grave", "sin_datos": 0},
-  "proveedores": [
+  "updated": "2026-11-02T15:53:36Z",
+  "categories": {"cloud": "Cloud", "dev": "Development", "network": "Network & CDN", "collab": "Collaboration", "ai": "AI"},
+  "summary": {"total": 27, "failing": 5, "worst": "major", "no_data": 0},
+  "providers": [
     {
       "id": "linode",
-      "nombre": "Akamai Cloud (Linode)",
-      "categoria": "nube",
+      "name": "Akamai Cloud (Linode)",
+      "category": "cloud",
       "web": "https://status.linode.com",
-      "estado": "degradado",
-      "resumen": "Partially Degraded Service",
-      "componentes": [{"nombre": "US-Southeast (Atlanta)", "estado": "degradado"}],
-      "total_componentes": 242,
-      "afectados": 1,
-      "alcance_limitado": true,
-      "incidencias": [{
+      "status": "degraded",
+      "description": "Partially Degraded Service",
+      "components": [{"name": "US-Southeast (Atlanta)", "status": "degraded"}],
+      "total_components": 242,
+      "affected": 1,
+      "limited_scope": true,
+      "incidents": [{
         "id": "nt58zhx3pmgm",
-        "titulo": "Customer Security Advisory: CVE-2026-98432",
-        "impacto": "aviso",
-        "fase": "Investigando",
-        "inicio": "2026-10-30T18:10:58Z",
-        "actualizado": "2026-11-02T10:55:43Z",
-        "mensaje": "While we continue to deploy kernel patches across our infrastructure…",
-        "enlace": "https://stspg.io/9pzh45ps11bv"
+        "title": "Customer Security Advisory: CVE-2026-98432",
+        "impact": "advisory",
+        "phase": "Investigating",
+        "started": "2026-10-30T18:10:58Z",
+        "updated": "2026-11-02T10:55:43Z",
+        "message": "While we continue to deploy kernel patches across our infrastructure…",
+        "link": "https://stspg.io/9pzh45ps11bv"
       }],
-      "mantenimientos": [{
+      "maintenance": [{
         "id": "jkxgzslpmgl4",
-        "titulo": "Scheduled Longview Maintenance - US-Central (Dallas)",
-        "fase": "Programado",
-        "en_curso": false,
-        "inicio": "2026-11-03T05:30:00Z",
-        "fin": "2026-11-03T11:30:00Z",
-        "enlace": "https://stspg.io/00rz5txrcy3z"
+        "title": "Scheduled Longview Maintenance - US-Central (Dallas)",
+        "phase": "Scheduled",
+        "in_progress": false,
+        "start": "2026-11-03T05:30:00Z",
+        "end": "2026-11-03T11:30:00Z",
+        "link": "https://stspg.io/00rz5txrcy3z"
       }],
-      "lugares": [{
+      "places": [{
         "id": "@ATL", "en": "Atlanta", "es": "Atlanta", "lat": 33.75, "lon": -84.39,
-        "pais": "USA", "pais_en": "United States", "pais_es": "Estados Unidos",
-        "nivel": "degradado", "n": 2,
-        "ejemplos": [
-          {"t": "US-Southeast (Atlanta)", "nivel": "degradado"},
-          {"t": "Service Issue - US-Southeast (Atlanta)", "nivel": "degradado"}
+        "country": "USA", "country_en": "United States", "country_es": "Estados Unidos",
+        "level": "degraded", "n": 2,
+        "examples": [
+          {"t": "US-Southeast (Atlanta)", "level": "degraded"},
+          {"t": "Service Issue - US-Southeast (Atlanta)", "level": "degraded"}
         ]
       }],
-      "sin_ubicacion": 0,
-      "fuente": {
-        "comprobado": "2026-11-02T15:53:36Z",
+      "unlocated": 0,
+      "source": {
+        "checked": "2026-11-02T15:53:36Z",
         "ok": true,
         "error": null,
-        "fallos_seguidos": 0,
-        "ultimo_ok": "2026-11-02T15:53:36Z"
+        "failures_in_a_row": 0,
+        "last_ok": "2026-11-02T15:53:36Z"
       }
     }
   ]
@@ -1094,89 +1170,91 @@ Field names are in Spanish, like the code (see the [glossary](#layout)).
 
 | Field | Type | Meaning |
 |---|---|---|
-| `actualizado` | ISO 8601 UTC | When the run finished |
-| `categorias` | object | The racks, in the order they're drawn |
-| `resumen.total` · `con_problemas` · `peor` · `sin_datos` | number · number · level · number | Global summary: total, failing, worst level, without data |
-| `proveedores[].estado` | level or `desconocido` | Final status, after the rules |
-| `proveedores[].resumen` | text | The sentence the provider itself publishes |
-| `proveedores[].componentes` | list | Affected components, worst first, at most 12 |
-| `proveedores[].total_componentes` · `afectados` | number | Totals, for the `59 of 473` line |
-| `proveedores[].alcance_limitado` | boolean | Whether the *degraded* cap was applied |
-| `proveedores[].incidencias[].impacto` | level or `aviso` | Each incident's severity |
-| `proveedores[].incidencias[].fase` | text | Phase, already translated to Spanish; the site translates it back |
-| `proveedores[].lugares[]` | list | Map points, worst first, at most 80 |
-| `proveedores[].lugares[].id` | text | `@IAH` city, `USA` country, `Z:europe` zone |
-| `proveedores[].lugares[].n` | number | How many components and incidents placed it there |
-| `proveedores[].sin_ubicacion` | number | Failures that couldn't be placed |
-| `proveedores[].fuente` | object | Status page health: last check, whether it responded, error, consecutive failures and last good data |
+| `updated` | ISO 8601 UTC | When the run finished |
+| `categories` | object | The racks, in the order they're drawn |
+| `summary.total` · `failing` · `worst` · `no_data` | number · number · level · number | Global summary: total, failing, worst level, without data |
+| `providers[].status` | level or `unknown` | Final status, after the rules |
+| `providers[].description` | text | The sentence the provider itself publishes, or empty when all is well |
+| `providers[].components` | list | Affected components, worst first, at most 12 |
+| `providers[].total_components` · `affected` | number | Totals, for the `59 of 473` line |
+| `providers[].limited_scope` | boolean | Whether the *degraded* cap was applied |
+| `providers[].incidents[].impact` | level or `advisory` | Each incident's severity |
+| `providers[].incidents[].phase` | text | Phase, normalised to English (*Investigating*, *Monitoring*…); the Spanish site translates it |
+| `providers[].places[]` | list | Map points, worst first, at most 80 |
+| `providers[].places[].id` | text | `@IAH` city, `USA` country, `Z:europe` zone |
+| `providers[].places[].n` | number | How many components and incidents placed it there |
+| `providers[].unlocated` | number | Failures that couldn't be placed |
+| `providers[].source` | object | Status page health: last check, whether it responded, error, consecutive failures and last good data |
 
 </details>
 
-#### `historial.json`
+#### `history.json`
 
 ```json
-{"aws": {"2026-11-01": {"m": 144, "c": 144, "peor": "parcial"}, "2026-11-02": {"m": 96, "c": 96, "peor": "parcial"}}}
+{"aws": {"2026-11-01": {"samples": 144, "down": 144, "worst": "partial"}, "2026-11-02": {"samples": 96, "down": 96, "worst": "partial"}}}
 ```
 
-Per provider and UTC day: samples (`m`), samples with a partial or major outage (`c`) and the day's worst status (`peor`). Trimmed to 90 days.
+Per provider and UTC day: samples (`samples`), samples with a partial or major outage (`down`) and the day's worst status (`worst`). Trimmed to 90 days.
 
-#### `incidencias.json`
+#### `incidents.json`
 
 ```json
 {
   "aws:arn:aws:health:me-central-1::event/MULTIPLE_SERVICES/…": {
-    "proveedor": "aws",
-    "titulo": "Multiple services (UAE): Region Availability",
-    "impacto": "parcial",
-    "inicio": "2026-03-01T12:51:25Z",
-    "visto": "2026-11-02T15:53:36Z",
-    "fin": null,
-    "enlace": "https://health.aws.amazon.com/health/status"
+    "provider": "aws",
+    "title": "Multiple services (UAE): Region Availability",
+    "impact": "partial",
+    "started": "2026-03-01T12:51:25Z",
+    "seen": "2026-11-02T15:53:36Z",
+    "ended": null,
+    "link": "https://health.aws.amazon.com/health/status"
   }
 }
 ```
 
-The key is `provider:id`. An incident opens the first time it's seen and closes (`fin` = the last time it was seen) once it no longer appears on the provider's page. If the source fails, its open incidents aren't closed. `impacto` holds the worst level seen, unless the incident becomes an advisory. Closed incidents are deleted after 30 days.
+The key is `provider:id`. An incident opens the first time it's seen and closes (`ended` = the last time it was seen) once it no longer appears on the provider's page. If the source fails, its open incidents aren't closed. `impact` holds the worst level seen, unless the incident becomes an advisory. Closed incidents are deleted after 30 days.
 
 ### On `main`
 
-#### `data/proveedores.json`
+#### `data/providers.json`
 
-See [Adding a provider](#adding-a-provider).
+`{"categories": {id: name}, "providers": [one line per provider]}`. See [Adding a provider](#adding-a-provider).
 
-#### `data/mapa.json`
+#### `data/map.json`
 
 ```json
-{"paso": 1.5, "lat_max": 82.0, "columnas": 240, "filas": ["0000000001fffffffc00…", "…"]}
+{"step": 1.5, "lat_max": 82.0, "columns": 240, "rows": ["0000000001fffffffc00…", "…"]}
 ```
 
 93 rows (from 82° N to 56° S, every 1.5°) of 60 hexadecimal characters: each character is 4 dots of the row, left to right, with `1` for land. Odd rows are shifted half a dot east.
 
-#### `data/lugares.json`
+#### `data/places.json`
 
 ```json
 {
-  "regiones": {"us-east-1": "@IAD", "West Europe": "@AMS", "…": "…"},
-  "iata":     {"IAH": "@IAH", "…": "…"},
-  "ciudades": {"Houston": "@IAH", "London": "@LHR", "Londres": "@LHR", "…": "…"},
-  "paises":   {"Spain": "ESP", "España": "ESP", "UK": "GBR", "…": "…"},
-  "zonas":    {"Europe": "Z:europe", "APAC": "Z:apac", "…": "…"},
-  "lugares":  {"@IAH": {"en": "Houston", "es": "Houston", "lat": 29.76, "lon": -95.37, "pais": "USA",
-                        "pais_en": "United States", "pais_es": "Estados Unidos"},
-               "ESP":  {"en": "Spain", "es": "España", "lat": 40.35, "lon": -3.62},
-               "…": "…"}
+  "regions":   {"us-east-1": "@IAD", "West Europe": "@AMS", "…": "…"},
+  "iata":      {"IAH": "@IAH", "…": "…"},
+  "cities":    {"Houston": "@IAH", "London": "@LHR", "Londres": "@LHR", "…": "…"},
+  "countries": {"Spain": "ESP", "España": "ESP", "UK": "GBR", "…": "…"},
+  "zones":     {"Europe": "Z:europe", "APAC": "Z:apac", "…": "…"},
+  "places":    {"@IAH": {"en": "Houston", "es": "Houston", "lat": 29.76, "lon": -95.37, "country": "USA",
+                         "country_en": "United States", "country_es": "Estados Unidos"},
+                "ESP":  {"en": "Spain", "es": "España", "lat": 40.35, "lon": -3.62},
+                "…": "…"}
 }
 ```
 
-The first five tables map a name to an id; `lugares` maps an id to its name in both languages and its coordinates.
+The first five tables map a name to an id; `places` maps an id to its name in both languages and its coordinates.
 
 ### In the browser
 
 | `localStorage` key | What it stores |
 |---|---|
-| `uptime.idioma` | `es` or `en` |
-| `uptime.fijados` | Ids of pinned services |
-| `uptime.historial` | The last 50 terminal commands |
+| `uptime.language` | `es` or `en` |
+| `uptime.pinned` | Ids of pinned services |
+| `uptime.history` | The last 50 terminal commands |
+
+If a key is empty, its old name is read instead (`uptime.idioma`, `uptime.fijados`, `uptime.historial`), so nobody loses their choices after the rename.
 
 Every read and write is wrapped in `try/catch`: if the browser won't store anything (private mode, blocked storage), the site works the same and just forgets on reload.
 
@@ -1189,7 +1267,7 @@ Every read and write is wrapped in `try/catch`: if the browser won't store anyth
 - **Provider text** is stripped of tags by the collector and inserted as text on the site, so an incident title containing HTML can't inject anything.
 - **External links** open with `rel="noopener"`.
 - **Notifications** are local: the tab itself generates them when it sees a change in the data. There's no *push* and no subscription.
-- **The Action** only has `contents: write` (to publish to `datos`) and `issues: write` (to raise the alarm). It uses no secrets.
+- **The Action** only has `contents: write` (to publish to `data`) and `issues: write` (to raise the alarm). It uses no secrets.
 - **Polite requests**: 27 every 10 minutes, to public pages built for this, with a `User-Agent` that says who's asking.
 - **Third parties on the site**: fonts from Google Fonts, and data from `raw.githubusercontent.com`.
 
@@ -1219,7 +1297,7 @@ Almost: data is updated every 10 minutes (if GitHub honours the cron) and the si
 Because its status is only available through Microsoft Graph, with tenant credentials.
 
 **Can I add a service?**
-Yes, if it has a public status page in one of the known formats: it's one line in `data/proveedores.json`. See [Adding a provider](#adding-a-provider).
+Yes, if it has a public status page in one of the known formats: it's one line in `data/providers.json`. See [Adding a provider](#adding-a-provider).
 
 **Is it official?**
 No. It's a personal project with no relationship to any of the providers. Names and trademarks belong to their owners.
@@ -1227,8 +1305,8 @@ No. It's a personal project with no relationship to any of the providers. Names 
 **Why "NOC", and why `bendi@noc`?**
 A NOC is a *Network Operations Center*, the room where people make sure everything keeps working. `noc` is the machine's name in the prompt: you're logged into the NOC's terminal.
 
-**Why is the code in Spanish?**
-Because that's the author's working language, as in his other projects. The documentation is in English, and the site speaks both.
+**What language is the code in?**
+English: file names, identifiers, comments, logs and data keys. The site speaks English and Spanish, and the terminal also understands a few Spanish aliases (`ayuda`, `servicios`, `salir`).
 
 ---
 
@@ -1265,7 +1343,7 @@ Because that's the author's working language, as in his other projects. The docu
 | Service status | Each provider's official status page | Public; data and trademarks belong to their owners |
 | Country borders | [world.geo.json](https://github.com/johan/world.geo.json), the same as atalaya | Public domain |
 | Country names | ISO 3166, in English and Spanish, the same as atalaya | |
-| Cities, regions and zones | Hand-made compilation in `lugares_base.json` | |
+| Cities, regions and zones | Hand-made compilation in `places_base.json` | |
 | Typefaces | [Archivo](https://fonts.google.com/specimen/Archivo) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono), via Google Fonts | SIL Open Font License |
 | Infrastructure | GitHub Actions and GitHub Pages | |
 
@@ -1282,7 +1360,7 @@ uptime is a personal project: free, with no ads and no tracking. If it's ever sa
 <br>
 
 <div align="center">
-<img src="docs/logo/uptime-marca.svg" alt="" width="56">
+<img src="docs/logo/mark.svg" alt="" width="56">
 <br>
 <sub><code>bendi@noc:~$ exit</code><br>There's no way out: this is a NOC.</sub>
 </div>

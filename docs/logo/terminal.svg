@@ -3,7 +3,7 @@
 <style>
 .t { font-family: ui-monospace, 'SFMono-Regular', 'JetBrains Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 15px; white-space: pre; }
 .x { opacity: 0; animation-duration: 18.0s; animation-iteration-count: infinite; animation-timing-function: steps(1, end); }
-@keyframes parpadeo { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+@keyframes blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
 @media (prefers-reduced-motion: reduce) { .x { animation: none !important; opacity: 1 !important; } .c { animation: none !important; } }
 @keyframes k1 { 0%, 1.389% { opacity: 0 } 1.394%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }
 .k1 { animation-name: k1; }@keyframes k2 { 0%, 3.333% { opacity: 0 } 3.339%, 96.667% { opacity: 1 } 96.672%, 100% { opacity: 0 } }

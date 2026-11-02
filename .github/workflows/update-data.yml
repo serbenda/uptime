@@ -1,6 +1,6 @@
 name: Update data
 
-# Data goes to the `datos` branch, which only ever holds the latest version (a single commit
+# Data goes to the `data` branch, which only ever holds the latest version (a single commit
 # that gets replaced on every run). That way `main` only receives code changes through PRs.
 
 on:
@@ -9,11 +9,11 @@ on:
   # After every merge the data is rebuilt with the new code, without waiting for the next slot
   push:
     branches: [main]
-    paths: ["scripts/**", "data/proveedores.json", "data/lugares.json", ".github/workflows/update-data.yml"]
+    paths: ["scripts/**", "data/providers.json", "data/places.json", ".github/workflows/update-data.yml"]
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish to the datos branch (untick to test changes without touching the site)"
+        description: "Publish to the data branch (untick to test changes without touching the site)"
         type: boolean
         default: true
 
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
-      UPTIME_SALIDA: ${{ github.workspace }}/out/data
+      UPTIME_OUTPUT: ${{ github.workspace }}/out/data
       GH_TOKEN: ${{ github.token }}
       PUBLISH: ${{ github.event_name != 'workflow_dispatch' || inputs.publish }}
     steps:
@@ -44,35 +44,42 @@ jobs:
           python-version: "3.12"
 
       # If the previous data can't be read, the run fails instead of starting from scratch:
-      # starting from scratch would wipe 90 days of history on publish
+      # starting from scratch would wipe 90 days of history on publish.
+      # `datos` is the branch's old name (from when the code was in Spanish): it's only read once,
+      # by the first run after the rename, and update.py migrates its files to the new format.
       - name: Restore previous data
         run: |
           mkdir -p out/data
-          set +e
-          git ls-remote --exit-code --heads origin datos > /dev/null
-          exists=$?
-          set -e
-          if [ "$exists" = "2" ]; then
-            echo "The datos branch doesn't exist yet: starting from scratch"
-          elif [ "$exists" = "0" ]; then
-            git fetch --depth=1 origin datos
-            git --work-tree=out checkout FETCH_HEAD -- data
-            git reset -q
-            test -s out/data/historial.json || { echo "The datos branch has no historial.json"; exit 1; }
-          else
-            echo "Couldn't query the datos branch (exit code $exists)"
-            exit 1
-          fi
+          for branch in data datos; do
+            set +e
+            git ls-remote --exit-code --heads origin "$branch" > /dev/null
+            exists=$?
+            set -e
+            if [ "$exists" = "0" ]; then
+              git fetch --depth=1 origin "$branch"
+              git --work-tree=out checkout FETCH_HEAD -- data
+              git reset -q
+              test -s out/data/history.json || test -s out/data/historial.json \
+                || { echo "The $branch branch has no history file"; exit 1; }
+              echo "Restored from the $branch branch"
+              break
+            elif [ "$exists" = "2" ]; then
+              echo "The $branch branch doesn't exist"
+            else
+              echo "Couldn't query the $branch branch (exit code $exists)"
+              exit 1
+            fi
+          done
           ls -la out/data
 
       - name: Read the status pages
-        run: python scripts/actualizar.py
+        run: python scripts/update.py
 
-      # On a test run the data goes to the `datos-prueba` branch and the site doesn't change
+      # On a test run the data goes to the `data-test` branch and the site doesn't change
       - name: Publish the data
         working-directory: out
         run: |
-          branch=$([ "$PUBLISH" = "true" ] && echo datos || echo datos-prueba)
+          branch=$([ "$PUBLISH" = "true" ] && echo data || echo data-test)
           git init -q
           git checkout -q --orphan "$branch"
           git config user.name "github-actions[bot]"
@@ -81,18 +88,23 @@ jobs:
           git commit -q -m "Data $(date -u +'%Y-%m-%d %H:%M') UTC"
           git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
 
-      - name: Open an issue if a source has been down for a while
+      # Opens (or comments on) the issue while a source has been down for 3 hours,
+      # and closes it on its own once every source responds again
+      - name: Open or close the "Data sources down" issue
         if: env.PUBLISH == 'true'
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if python scripts/salud.py > health.md; then
+          title="Data sources down"
+          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if python scripts/health.py > health.md; then
             cat health.md
+            if [ -n "$number" ]; then
+              gh issue close "$number" --comment "All sources are responding again. Closed automatically by $RUN_URL"
+            fi
             exit 0
           fi
           cat health.md
-          title="Data sources down"
-          number=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
           if [ -n "$number" ]; then
             gh issue comment "$number" --body-file health.md
           else
