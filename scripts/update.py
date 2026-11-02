@@ -18,9 +18,6 @@ Writes to $UPTIME_OUTPUT (data/ by default; in the Action, the `data` branch):
   status.json      current status of every provider (incidents, components, maintenance, map points)
   history.json     daily summary per provider (last 90 days) for the availability bars
   incidents.json   log of the incidents seen in the last 30 days, with their duration
-
-Files written by older versions, with Spanish names (estado.json, historial.json,
-incidencias.json), are migrated automatically on the first run and then removed.
 """
 
 import html
@@ -612,87 +609,14 @@ def fetch(prov):
         return None, f"{type(e).__name__}: {e}"[:200]
 
 
-# ---------------------------------------------------------------- migrating files from older versions
-#
-# Until November 2026 the data used Spanish names. These functions translate it, so the
-# history and the incident log survive the switch.
-
-LEGACY_LEVEL = {"operativo": "operational", "mantenimiento": "maintenance", "degradado": "degraded",
-                "parcial": "partial", "grave": "major", "desconocido": "unknown", "aviso": "advisory"}
-LEGACY_PHASE = {"Investigando": "Investigating", "Identificado": "Identified", "Vigilando": "Monitoring",
-                "Resuelto": "Resolved", "Análisis posterior": "Postmortem", "Programado": "Scheduled",
-                "En curso": "In progress", "Verificando": "Verifying", "Completado": "Completed"}
-LEGACY_CATEGORY = {"nube": "cloud", "desarrollo": "dev", "red": "network", "colaboracion": "collab", "ia": "ai"}
-LEGACY_FILES = {"status.json": "estado.json", "history.json": "historial.json", "incidents.json": "incidencias.json"}
-
-
-def _level(value):
-    return LEGACY_LEVEL.get(value, value)
-
-
-def migrate_status(old):
-    """estado.json → status.json (only what the next run needs: previous data and source health)."""
-    def provider(p):
-        src = p.get("fuente") or {}
-        return {
-            "id": p.get("id"), "name": p.get("nombre"), "category": LEGACY_CATEGORY.get(p.get("categoria"), p.get("categoria")),
-            "web": p.get("web"), "status": _level(p.get("estado")), "description": p.get("resumen", ""),
-            "components": [{"name": c.get("nombre"), "status": _level(c.get("estado"))} for c in p.get("componentes", [])],
-            "total_components": p.get("total_componentes", 0), "affected": p.get("afectados", 0),
-            "limited_scope": p.get("alcance_limitado", False),
-            "incidents": [{"id": i.get("id"), "title": i.get("titulo"), "impact": _level(i.get("impacto")),
-                           "phase": LEGACY_PHASE.get(i.get("fase"), i.get("fase", "")), "started": i.get("inicio"),
-                           "updated": i.get("actualizado"), "message": i.get("mensaje", ""), "link": i.get("enlace"),
-                           **({"affects": i["afecta"]} if i.get("afecta") else {})} for i in p.get("incidencias", [])],
-            "maintenance": [{"id": m.get("id"), "title": m.get("titulo"), "phase": LEGACY_PHASE.get(m.get("fase"), m.get("fase", "")),
-                             "in_progress": m.get("en_curso", False), "start": m.get("inicio"), "end": m.get("fin"),
-                             "link": m.get("enlace")} for m in p.get("mantenimientos", [])],
-            "places": [{"id": lu.get("id"), "en": lu.get("en"), "es": lu.get("es"), "lat": lu.get("lat"), "lon": lu.get("lon"),
-                        **({"country": lu["pais"], "country_en": lu.get("pais_en"), "country_es": lu.get("pais_es")} if "pais" in lu else {}),
-                        "level": _level(lu.get("nivel")), "n": lu.get("n", 1),
-                        "examples": [{"t": x.get("t"), "level": _level(x.get("nivel"))} for x in lu.get("ejemplos", [])]}
-                       for lu in p.get("lugares", [])],
-            "unlocated": p.get("sin_ubicacion", 0),
-            "source": {"checked": src.get("comprobado"), "ok": src.get("ok", False), "error": src.get("error"),
-                       "failures_in_a_row": src.get("fallos_seguidos", 0), "last_ok": src.get("ultimo_ok")},
-        }
-    return {"updated": old.get("actualizado"),
-            "categories": {LEGACY_CATEGORY.get(k, k): v for k, v in old.get("categorias", {}).items()},
-            "providers": [provider(p) for p in old.get("proveedores", [])]}
-
-
-def migrate_history(old):
-    """historial.json → history.json: m, c, peor → samples, down, worst."""
-    return {prov: {day: {"samples": v.get("m", 0), "down": v.get("c", 0), "worst": _level(v.get("peor", "operativo"))}
-                   for day, v in days.items()}
-            for prov, days in old.items()}
-
-
-def migrate_incidents(old):
-    """incidencias.json → incidents.json."""
-    return {key: {"provider": r.get("proveedor"), "title": r.get("titulo"), "impact": _level(r.get("impacto")),
-                  "started": r.get("inicio"), "seen": r.get("visto"), "ended": r.get("fin"), "link": r.get("enlace")}
-            for key, r in old.items()}
-
-
-MIGRATIONS = {"status.json": migrate_status, "history.json": migrate_history, "incidents.json": migrate_incidents}
-
-
 # ---------------------------------------------------------------- persistence
 
 
 def read(name, default):
-    """Reads an output file; if it doesn't exist yet, migrates the one from older versions."""
     try:
         return json.loads((OUTPUT / name).read_text("utf-8"))
     except (OSError, ValueError):
-        pass
-    try:
-        old = json.loads((OUTPUT / LEGACY_FILES[name]).read_text("utf-8"))
-    except (KeyError, OSError, ValueError):
         return default
-    print(f"Migrating {LEGACY_FILES[name]} to {name}")
-    return MIGRATIONS[name](old)
 
 
 def write(name, data):
@@ -700,11 +624,6 @@ def write(name, data):
     tmp = OUTPUT / (name + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf-8")
     tmp.replace(OUTPUT / name)
-
-
-def remove_legacy_files():
-    for old in LEGACY_FILES.values():
-        (OUTPUT / old).unlink(missing_ok=True)
 
 
 def merge(prov, result, error, previous):
@@ -806,7 +725,6 @@ def main():
     })
     write("history.json", update_history(read("history.json", {}), providers))
     write("incidents.json", update_incidents(read("incidents.json", {}), providers))
-    remove_legacy_files()
 
     if all(not p["source"]["ok"] for p in providers):
         print("No source responded: the runner's network is probably down.")

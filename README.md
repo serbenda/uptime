@@ -869,27 +869,6 @@ Everything in the code is in English: file names, identifiers, comments, log mes
 
 There's no generated data on `main`: `status.json`, `history.json` and `incidents.json` are in `.gitignore` and live on the `data` branch.
 
-<details>
-<summary><b>Coming from the Spanish version of the code</b></summary>
-
-Until November 2026 the code, the data keys and the data branch had Spanish names. The switch is automatic and needs nothing by hand:
-
-| Before | Now |
-|---|---|
-| `datos` branch · `datos-prueba` branch | `data` branch · `data-test` branch |
-| `estado.json` · `historial.json` · `incidencias.json` | `status.json` · `history.json` · `incidents.json` |
-| `proveedores.json` · `lugares.json` · `mapa.json` | `providers.json` · `places.json` · `map.json` |
-| `actualizar.py` · `salud.py` · `generar_mapa.py` · `generar_marca.py` · `capturas.py` | `update.py` · `health.py` · `build_map.py` · `build_brand.py` · `screenshots.py` |
-| Levels `operativo` · `mantenimiento` · `degradado` · `parcial` · `grave` · `desconocido` · `aviso` | `operational` · `maintenance` · `degraded` · `partial` · `major` · `unknown` · `advisory` |
-| Racks `nube` · `desarrollo` · `red` · `colaboracion` · `ia` | `cloud` · `dev` · `network` · `collab` · `ai` |
-| `UPTIME_SALIDA` | `UPTIME_OUTPUT` |
-
-- **The Action** restores from `data`, and if it doesn't exist yet, from `datos`. `update.py` reads any file it finds under its old name, converts it to the new format (keeping the 90 days of history, the open incidents and each source's failure count), writes the new files and deletes the old ones. From then on `datos` is no longer read, and it can be deleted along with `datos-prueba`.
-- **The site** reads the `data` branch, and falls back to `datos` (converting it in the browser) until the first run after the merge has created it.
-- **The browser** keeps your choices: the language, pins and terminal history are read from their old `localStorage` keys if the new ones are empty.
-
-</details>
-
 ### Making a change, step by step
 
 Every change follows the same path, from `development` to the live site:
@@ -1033,7 +1012,7 @@ This is what every `parse_<type>()` returns and what the site reads. `empty()` p
 
 ### Tests
 
-[`tests/test_update.py`](tests/test_update.py) has 37 `unittest` tests built on sample responses for each format. They don't connect to anything: if a provider changes its format, these tests won't notice, but the Action will (it flags it as an *unexpected format* and, if it persists, opens the issue).
+[`tests/test_update.py`](tests/test_update.py) has 33 `unittest` tests built on sample responses for each format. They don't connect to anything: if a provider changes its format, these tests won't notice, but the Action will (it flags it as an *unexpected format* and, if it persists, opens the issue).
 
 <details>
 <summary><b>What each test class covers</b></summary>
@@ -1046,7 +1025,6 @@ This is what every `parse_<type>()` returns and what the site reads. `empty()` p
 | `TestPlaces` | 13 real-world texts with their expected result (Cloudflare, Linode, AWS, Google, Azure, Akamai, acronyms that aren't airports…), that the gazetteer has no broken references, and that `place_failures()` merges, ranks and skips advisories |
 | `TestFetching` | URLs, that a network or format error doesn't break anything, and that every provider in the config is valid |
 | `TestPersistence` | That a failing source keeps its data and becomes *no data* on time, that history is trimmed and doesn't count what wasn't measured, and that incidents open and close (and don't close when the source fails) |
-| `TestMigration` | That files with the old Spanish names are converted (history, incidents, each source's failure count), that new files win over old ones, and that the old ones are deleted |
 
 </details>
 
@@ -1253,8 +1231,6 @@ The first five tables map a name to an id; `places` maps an id to its name in bo
 | `uptime.language` | `es` or `en` |
 | `uptime.pinned` | Ids of pinned services |
 | `uptime.history` | The last 50 terminal commands |
-
-If a key is empty, its old name is read instead (`uptime.idioma`, `uptime.fijados`, `uptime.historial`), so nobody loses their choices after the rename.
 
 Every read and write is wrapped in `try/catch`: if the browser won't store anything (private mode, blocked storage), the site works the same and just forgets on reload.
 

@@ -44,32 +44,25 @@ jobs:
           python-version: "3.12"
 
       # If the previous data can't be read, the run fails instead of starting from scratch:
-      # starting from scratch would wipe 90 days of history on publish.
-      # `datos` is the branch's old name (from when the code was in Spanish): it's only read once,
-      # by the first run after the rename, and update.py migrates its files to the new format.
+      # starting from scratch would wipe 90 days of history on publish
       - name: Restore previous data
         run: |
           mkdir -p out/data
-          for branch in data datos; do
-            set +e
-            git ls-remote --exit-code --heads origin "$branch" > /dev/null
-            exists=$?
-            set -e
-            if [ "$exists" = "0" ]; then
-              git fetch --depth=1 origin "$branch"
-              git --work-tree=out checkout FETCH_HEAD -- data
-              git reset -q
-              test -s out/data/history.json || test -s out/data/historial.json \
-                || { echo "The $branch branch has no history file"; exit 1; }
-              echo "Restored from the $branch branch"
-              break
-            elif [ "$exists" = "2" ]; then
-              echo "The $branch branch doesn't exist"
-            else
-              echo "Couldn't query the $branch branch (exit code $exists)"
-              exit 1
-            fi
-          done
+          set +e
+          git ls-remote --exit-code --heads origin data > /dev/null
+          exists=$?
+          set -e
+          if [ "$exists" = "2" ]; then
+            echo "The data branch doesn't exist yet: starting from scratch"
+          elif [ "$exists" = "0" ]; then
+            git fetch --depth=1 origin data
+            git --work-tree=out checkout FETCH_HEAD -- data
+            git reset -q
+            test -s out/data/history.json || { echo "The data branch has no history.json"; exit 1; }
+          else
+            echo "Couldn't query the data branch (exit code $exists)"
+            exit 1
+          fi
           ls -la out/data
 
       - name: Read the status pages

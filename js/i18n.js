@@ -367,8 +367,8 @@ const LANGUAGES = {
   },
 };
 
-// Browser storage keys. Older versions used Spanish names; they're still read as a fallback.
-const STORAGE = { language: ["uptime.language", "uptime.idioma"], pinned: ["uptime.pinned", "uptime.fijados", "uptime.vigilados"], history: ["uptime.history", "uptime.historial"] };
+// Browser storage keys
+const STORAGE = { language: ["uptime.language"], pinned: ["uptime.pinned"], history: ["uptime.history"] };
 
 function initialLanguage() {
   const asked = new URLSearchParams(location.search).get("lang");
