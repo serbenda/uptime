@@ -1384,7 +1384,7 @@ Every read and write is wrapped in `try/catch`: if the browser won't store anyth
 
 ## Security and privacy
 
-- **No servers, no accounts, no cookies, no analytics, no tracking.** The page is static and sends nothing to anyone.
+- **No servers, no accounts, no cookies, no personal data.** The page is static. The only thing it sends is an anonymous visit count to [GoatCounter](https://www.goatcounter.com/), which uses no cookies and stores no personal data, so I can see how many people use it.
 - **The terminal doesn't execute anything**: it's a fixed-command interpreter written in JavaScript. What you type never leaves the browser, and it's always rendered as text (`textContent`), never as HTML.
 - **Provider text** is stripped of tags by the collector and inserted as text on the site, so an incident title containing HTML can't inject anything.
 - **External links** open with `rel="noopener"`.
@@ -1481,7 +1481,7 @@ A sibling of [atalaya](https://github.com/serbenda/atalaya). Made by [Bendi](htt
 
 <a href="https://github.com/sponsors/serbenda"><img src="docs/screenshots/psu.webp" alt="The NOC's power supply: the GitHub Sponsors section of the site" width="900"></a>
 
-uptime is a personal project: free, with no ads and no tracking. If it's ever saved you from an "is it me or is it them?", you can help keep the lights on through [GitHub Sponsors](https://github.com/sponsors/serbenda). On the site it's the NOC's power supply, and in the terminal, `sponsor`.
+uptime is a personal project: free, with no ads and no cookies. If it's ever saved you from an "is it me or is it them?", you can help keep the lights on through [GitHub Sponsors](https://github.com/sponsors/serbenda). On the site it's the NOC's power supply, and in the terminal, `sponsor`.
 
 <br>
 

@@ -90,7 +90,7 @@ const LANGUAGES = {
       lang_ok: (l) => `LANG=${l}`,
       empty: "(vacío)",
       no_manual: (c) => `No hay entrada de manual para ${c}`,
-      sponsor: ["uptime no tiene servidores, anuncios ni rastreo.", "Funciona con GitHub Actions, café y el tiempo libre de una persona."],
+      sponsor: ["uptime no tiene servidores, anuncios ni cookies.", "Funciona con GitHub Actions, café y el tiempo libre de una persona."],
       sponsor_link: "github.com/sponsors/serbenda",
       neo: { os: "SO", services: "Servicios", failing: "Con fallos", locations: "Ubicaciones", data: "Datos", language: "Idioma", shell: "Shell", shell_value: "bash (de juguete)", racks: "Racks" },
     },
@@ -126,7 +126,7 @@ const LANGUAGES = {
 
     // power supply (Sponsors)
     psu_title: "Fuente de alimentación",
-    psu_text: "uptime no tiene servidores, anuncios ni rastreo. Funciona con GitHub Actions, café y el tiempo libre de una persona. Si alguna vez te ha sacado de un «¿es mío o es de ellos?», puedes ayudar a mantenerlo encendido.",
+    psu_text: "uptime no tiene servidores, anuncios ni cookies. Funciona con GitHub Actions, café y el tiempo libre de una persona. Si alguna vez te ha sacado de un «¿es mío o es de ellos?», puedes ayudar a mantenerlo encendido.",
     psu_button: "Patrocinar en GitHub",
     psu_input: "ENTRADA",
     psu_output: "SALIDA",
@@ -270,7 +270,7 @@ const LANGUAGES = {
       lang_ok: (l) => `LANG=${l}`,
       empty: "(empty)",
       no_manual: (c) => `No manual entry for ${c}`,
-      sponsor: ["uptime has no servers, no ads and no tracking.", "It runs on GitHub Actions, coffee and one person's spare time."],
+      sponsor: ["uptime has no servers, no ads and no cookies.", "It runs on GitHub Actions, coffee and one person's spare time."],
       sponsor_link: "github.com/sponsors/serbenda",
       neo: { os: "OS", services: "Services", failing: "Failing", locations: "Locations", data: "Data", language: "Language", shell: "Shell", shell_value: "bash (toy)", racks: "Racks" },
     },
@@ -303,7 +303,7 @@ const LANGUAGES = {
     language: "Language",
 
     psu_title: "Power supply",
-    psu_text: "uptime has no servers, no ads and no tracking. It runs on GitHub Actions, coffee and one person's spare time. If it ever answered an \"is it me or is it them?\" for you, you can help keep the lights on.",
+    psu_text: "uptime has no servers, no ads and no cookies. It runs on GitHub Actions, coffee and one person's spare time. If it ever answered an \"is it me or is it them?\" for you, you can help keep the lights on.",
     psu_button: "Sponsor on GitHub",
     psu_input: "INPUT",
     psu_output: "OUTPUT",

@@ -148,7 +148,7 @@
         <div class="psu-body">
           <p class="psu-model"><span class="led" data-level="maintenance" id="psu-led"></span> PSU-1 <span class="psu-standby" data-i18n="psu_standby">en reposo, esperando corriente</span></p>
           <h2 id="t-psu" data-i18n="psu_title">Fuente de alimentación</h2>
-          <p class="psu-text" data-i18n="psu_text">uptime no tiene servidores, anuncios ni rastreo.</p>
+          <p class="psu-text" data-i18n="psu_text">uptime no tiene servidores, anuncios ni cookies.</p>
         </div>
         <dl class="psu-label">
           <div><dt data-i18n="psu_input">ENTRADA</dt><dd>GitHub Sponsors</dd></div>
@@ -193,5 +193,8 @@
   <script src="js/i18n.js?v=8"></script>
   <script src="js/app.js?v=9"></script>
   <script src="js/terminal.js?v=6"></script>
+<!-- Anonymous visit counter (GoatCounter): no cookies, no personal data. Paths are counted as /uptime/… so they don't mix with bendi.dev's -->
+<script>window.goatcounter = { path: p => '/uptime' + p };</script>
+<script data-goatcounter="https://serbenda.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
