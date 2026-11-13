@@ -17,8 +17,8 @@ with a world map of failures and a terminal you can type into.
 [![Tests](https://github.com/serbenda/uptime/actions/workflows/tests.yml/badge.svg)](https://github.com/serbenda/uptime/actions/workflows/tests.yml)
 [![Sponsor uptime on GitHub Sponsors](https://img.shields.io/badge/Sponsor_uptime-GitHub_Sponsors-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/serbenda)
 <br>
-![27 providers](https://img.shields.io/badge/providers-27-43D17F?style=flat-square&labelColor=18212A)
-![7 status formats](https://img.shields.io/badge/status_formats-7-5AA9FF?style=flat-square&labelColor=18212A)
+![28 providers](https://img.shields.io/badge/providers-28-43D17F?style=flat-square&labelColor=18212A)
+![8 status formats](https://img.shields.io/badge/status_formats-8-5AA9FF?style=flat-square&labelColor=18212A)
 ![243 cities on the map](https://img.shields.io/badge/cities_on_the_map-243-F2C230?style=flat-square&labelColor=18212A)
 ![Checked every 10 minutes](https://img.shields.io/badge/checked_every-10_min-FF8A2A?style=flat-square&labelColor=18212A)
 ![0 servers](https://img.shields.io/badge/servers-0-FF4D4D?style=flat-square&labelColor=18212A)
@@ -91,7 +91,7 @@ with a world map of failures and a terminal you can type into.
 
 | Question | Answer |
 |---|---|
-| **What is it?** | A single page that brings together the status of 27 services almost every tech team depends on: clouds, code forges, package registries, CDNs, collaboration tools and AI. |
+| **What is it?** | A single page that brings together the status of 28 services almost every tech team depends on: clouds, code forges, package registries, CDNs, collaboration tools and AI. |
 | **What is it for?** | Telling at a glance whether the problem is yours or the provider's, where it's failing and since when. |
 | **Where does the data come from?** | Each provider's official status page, read every 10 minutes. |
 | **What does it cost?** | Nothing. There are no servers: everything runs on GitHub Actions and GitHub Pages, and a free [cron-job.org](https://cron-job.org) job starts the run every 10 minutes. |
@@ -125,7 +125,7 @@ Below it, a terminal session that has already run two commands:
 
 - **`uptime`** prints a line like the real command: time, days of history, number of services, how many are failing and a *load average*. The load average is real: the share of services with a partial or major outage right now, averaged over the last 7 days and over the last 30. Hover over it for an explanation.
 - **`systemctl --failed`** (or `systemctl status providers` when all is well) answers the question with systemd's boot marker: a green `[  OK  ] All systems operational.` or a red `[FAILED] GitHub and Azure are having problems.` With more than three services down it's summarised: `5 services are having problems.`
-- Below it, the summary (`27 services, 20 operational, 2 in maintenance, 5 failing`) and one line per failing service: LED, name, status and the title of its worst incident. Each name takes you to its server in the rack.
+- Below it, the summary (`28 services, 21 operational, 2 in maintenance, 5 failing`) and one line per failing service: LED, name, status and the title of its worst incident. Each name takes you to its server in the rack.
 
 The title bar shows when the data was last updated (`updated 4 minutes ago`). If it's more than 40 minutes old, it turns orange and warns that updates are running late. It also holds the language switcher (`LANG= es_ES en_US`). The favicon and the tab title change colour with the worst status and show the number of failing services: `(5) uptime`.
 
@@ -226,7 +226,7 @@ The GitHub Sponsors section is shaped like a server's power supply:
 
 - **The fan** spins slowly, and speeds up when you hover the switch.
 - **The PSU LED** is blue on standby (*waiting for power*) and turns green as you approach the switch.
-- **The specification label**, like the silver sticker on a real PSU, shows real figures: `INPUT GitHub Sponsors`, `OUTPUT 27 services every 10 min`, `COST €0 in servers`.
+- **The specification label**, like the silver sticker on a real PSU, shows real figures: `INPUT GitHub Sponsors`, `OUTPUT 28 services every 10 min`, `COST €0 in servers`.
 - **The I/O rocker switch** is the link to [github.com/sponsors/serbenda](https://github.com/sponsors/serbenda).
 
 ### Languages
@@ -340,7 +340,7 @@ Commands and options are the same in both languages; answers come in the selecte
 
 ## Providers
 
-27 providers in 5 racks. The list lives in [`data/providers.json`](data/providers.json): adding one that uses a known format is a one-line change.
+28 providers in 5 racks. The list lives in [`data/providers.json`](data/providers.json): adding one that uses a known format is a one-line change.
 
 | Rack | id | Provider | Format | Status page |
 |---|---|---|---|---|
@@ -365,6 +365,7 @@ Commands and options are the same in both languages; answers come in the selecte
 | Network & CDN | `vercel` | Vercel | `statuspage` | [vercel-status.com](https://www.vercel-status.com) |
 | Collaboration | `google-workspace` | Google Workspace | `google` | [google.com/appsstatus](https://www.google.com/appsstatus/dashboard/) |
 | Collaboration | `slack` | Slack | `slack` | [slack-status.com](https://slack-status.com) |
+| Collaboration | `microsoft-365` | Microsoft 365 (Outlook, Teams, OneDrive…) | `microsoft365` | [status.cloud.microsoft](https://status.cloud.microsoft/) |
 | Collaboration | `zoom` | Zoom | `statuspage` | [status.zoom.us](https://status.zoom.us) |
 | Collaboration | `jira` | Jira | `statuspage` | [jira-software.status.atlassian.com](https://jira-software.status.atlassian.com) |
 | Collaboration | `confluence` | Confluence | `statuspage` | [confluence.status.atlassian.com](https://confluence.status.atlassian.com) |
@@ -374,7 +375,7 @@ Commands and options are the same in both languages; answers come in the selecte
 
 ### Supported formats
 
-Every provider publishes its status in its own way. [`update.py`](scripts/update.py) understands seven formats and translates them all into a common one.
+Every provider publishes its status in its own way. [`update.py`](scripts/update.py) understands eight formats and translates them all into a common one.
 
 | `type` | What it downloads | What it uses | Used by |
 |---|---|---|---|
@@ -385,10 +386,10 @@ Every provider publishes its status in its own way. [`update.py`](scripts/update
 | `azure-devops` | `/_apis/status/health` | Overall health, and each service's health per geography | Azure DevOps |
 | `aws` | Current public events from the AWS Health Dashboard | Service, region, summary and the latest entry in the event log. AWS serves it as UTF-16 with a BOM, which is handled | AWS |
 | `slack` | `slack-status.com/api/v2.0.0/current` | Active incidents with their type, affected services and latest note | Slack |
+| `microsoft365` | `status.cloud.microsoft/api/posts/mac` and `…/api/posts/m365Consumer`, the two JSON documents Microsoft's public status page renders; each one falls back to `msit.status.cloud.microsoft` if the main host fails | The admin center post (where Microsoft announces broad outages) and one post per consumer service (Outlook.com, OneDrive, Teams…): `Status`, `Title`, `Message` and dates | Microsoft 365 |
 
 ### Why some are missing
 
-- **Microsoft 365**: its status is only published through Microsoft Graph, with tenant credentials. From Microsoft, Azure and Azure DevOps are included. It's on the [roadmap](#roadmap).
 - **Quay.io**: its status page is Red Hat's; listing it separately duplicated every incident.
 - **Providers without a readable public page** (Salesforce, Meta, Apple Developer…): their pages are rendered in the browser, with no stable API that can be read without credentials.
 
@@ -406,7 +407,7 @@ Every provider publishes its status in its own way. [`update.py`](scripts/update
 | `id` | Yes | Unique identifier, lowercase with hyphens. It's what you type in the terminal and in `#p=` |
 | `name` | Yes | Display name |
 | `category` | Yes | One of the racks in `categories`: `cloud`, `dev` (development), `network` (network & CDN), `collab` (collaboration), `ai` |
-| `type` | Yes | One of the seven formats |
+| `type` | Yes | One of the eight formats |
 | `url` | Depends on the format | The page's base URL (Statuspage) or the exact URL to download (all others) |
 | `page` | `statusio` only | The page id on status.io |
 | `web` | Recommended | The page linked for humans |
@@ -465,6 +466,8 @@ On top of that, three corrections apply:
 | Azure DevOps | `healthy` · `advisory` · `degraded` · `unhealthy` | operational · degraded · partial · major |
 | AWS | any event; *informational* in the title | partial; degraded |
 | Slack | `notice` · `incident` · `outage` · `maintenance` | degraded · partial · major · maintenance |
+| Microsoft 365 | `Available` · `Operational` · `Service restored` | operational |
+| Microsoft 365 | `Service degradation` or any other state | degraded; partial if the text says users are *unable*, or of an *outage*, *failures*…; major if the admin center says so about *multiple* or *all* services |
 
 </details>
 
@@ -578,7 +581,7 @@ Equirectangular, from 82° N to 56° S, cropping the poles (no data centres, and
 
 ```mermaid
 flowchart TB
-  Sources["<b>27 official status pages</b><br/>Statuspage, status.io, Google, Azure,<br/>Azure DevOps, AWS, Slack"]
+  Sources["<b>28 official status pages</b><br/>Statuspage, status.io, Google, Azure,<br/>Azure DevOps, AWS, Slack, Microsoft 365"]
 
   subgraph Triggers["What starts a run"]
     direction LR
@@ -638,7 +641,7 @@ sequenceDiagram
   else can't be checked
     A--xC: fails, so history isn't wiped
   end
-  A->>F: 27 downloads, 8 in parallel
+  A->>F: 29 downloads, 8 in parallel
   F-->>A: JSON, RSS or error
   A->>A: translates to the common format, applies the rules, places on the map
   A->>A: merges with the previous data, adds the sample to the history, opens and closes incidents
@@ -956,7 +959,7 @@ And `health.py` prints either `All sources are responding.` or the issue's table
 | cron-job.org | 144 calls a day | Free |
 | GitHub Pages | About 90 KB of site, including the map | Free |
 | `data` branch | About 250 KB with 90 days of history; it doesn't grow, since it's a single commit | Free |
-| Requests to providers | 27 every 10 minutes, with a `User-Agent` that identifies the project | Status pages are public and meant for this |
+| Requests to providers | 29 every 10 minutes (Microsoft 365 needs two), with a `User-Agent` that identifies the project | Status pages are public and meant for this |
 
 ### Troubleshooting
 
@@ -1158,7 +1161,7 @@ This is what every `parse_<type>()` returns and what the site reads. `empty()` p
 
 ### Tests
 
-[`tests/test_update.py`](tests/test_update.py) has 33 `unittest` tests built on sample responses for each format. They don't connect to anything: if a provider changes its format, these tests won't notice, but the Action will (it flags it as an *unexpected format* and, if it persists, opens the issue).
+[`tests/test_update.py`](tests/test_update.py) has 41 `unittest` tests built on sample responses for each format. They don't connect to anything: if a provider changes its format, these tests won't notice, but the Action will (it flags it as an *unexpected format* and, if it persists, opens the issue).
 
 <details>
 <summary><b>What each test class covers</b></summary>
@@ -1168,6 +1171,7 @@ This is what every `parse_<type>()` returns and what the site reads. `empty()` p
 | `TestHelpers` | The level scale, dates (ISO, RFC 822, seconds and milliseconds since 1970), HTML stripping and UTF-16 JSON |
 | `TestStatuspage` | All clear, incidents and components, groups not counting, maintenance, broken format, the scope rule and advisories (by impact and by title) |
 | `TestStatusio`, `TestGoogle`, `TestAzure`, `TestAzureDevOps`, `TestAws`, `TestSlack` | Each format: normal case, incidents, empty and broken; for Azure DevOps, that maintenance doesn't count as degraded |
+| `TestMicrosoft365` | All clear, *Service restored*, a worldwide outage from the admin center, a single consumer service, unknown states, Microsoft's `0001-01-01` empty dates, broken documents and the fallback to the second host |
 | `TestPlaces` | 13 real-world texts with their expected result (Cloudflare, Linode, AWS, Google, Azure, Akamai, acronyms that aren't airports…), that the gazetteer has no broken references, and that `place_failures()` merges, ranks and skips advisories |
 | `TestFetching` | URLs, that a network or format error doesn't break anything, and that every provider in the config is valid |
 | `TestPersistence` | That a failing source keeps its data and becomes *no data* on time, that history is trimmed and doesn't count what wasn't measured, and that incidents open and close (and don't close when the source fails) |
@@ -1238,7 +1242,7 @@ To add a string, add the same key to both `es` and `en`. To add a language, copy
 {
   "updated": "2026-11-02T15:53:36Z",
   "categories": {"cloud": "Cloud", "dev": "Development", "network": "Network & CDN", "collab": "Collaboration", "ai": "AI"},
-  "summary": {"total": 27, "failing": 5, "worst": "major", "no_data": 0},
+  "summary": {"total": 28, "failing": 5, "worst": "major", "no_data": 0},
   "providers": [
     {
       "id": "linode",
@@ -1391,7 +1395,7 @@ Every read and write is wrapped in `try/catch`: if the browser won't store anyth
 - **Notifications** are local: the tab itself generates them when it sees a change in the data. There's no *push* and no subscription.
 - **The Action** only has `contents: write` (to publish to `data`) and `issues: write` (to raise the alarm). It uses no secrets.
 - **The external trigger** uses a fine-grained token limited to this repository's Actions, stored only in cron-job.org. cron-job.org sends one request to GitHub's API and never sees the code, the data or the status pages.
-- **Polite requests**: 27 every 10 minutes, to public pages built for this, with a `User-Agent` that says who's asking.
+- **Polite requests**: 29 every 10 minutes, to public pages built for this, with a `User-Agent` that says who's asking.
 - **Third parties on the site**: fonts from Google Fonts, and data from `raw.githubusercontent.com`.
 
 ---
@@ -1416,8 +1420,8 @@ Because every sample measured so far had a partial or major outage open. With on
 **Is it real time?**
 Almost: data is updated every 10 minutes (cron-job.org starts the run) and the site reloads it every 5. A problem a provider publishes at 10:02 shows up by around 10:20 at the latest.
 
-**Why isn't Microsoft 365 included?**
-Because its status is only available through Microsoft Graph, with tenant credentials.
+**What does Microsoft 365 cover?**
+What Microsoft publishes on its public status page, [status.cloud.microsoft](https://status.cloud.microsoft/): broad incidents announced through the admin center (like a worldwide Outlook or Teams outage) and the status of each consumer service (Outlook.com, OneDrive, Teams free…). It isn't any company's tenant health: an incident that only affects some tenants appears only in each tenant's *Service health*, behind a sign-in.
 
 **Why does it need cron-job.org if everything runs on GitHub?**
 Because GitHub's scheduler doesn't guarantee when, or whether, a scheduled workflow runs; on this repository it never ran at all. cron-job.org only acts as the clock: every 10 minutes it asks GitHub's API to start *Update data*, and the run itself happens in GitHub Actions.
@@ -1451,7 +1455,6 @@ English: file names, identifiers, comments, logs and data keys. The site speaks 
 
 ## Roadmap
 
-- [ ] Microsoft 365 through Microsoft Graph (requires registering an application in a tenant).
 - [ ] More providers: Oracle Cloud, IBM Cloud, Fastly, Datadog, Sentry, Stripe.
 - [ ] Docker Hub is moving its status page to incident.io: its parser will need updating when it switches.
 - [ ] uptime's own RSS feed with every provider's incidents.

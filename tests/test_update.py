@@ -247,6 +247,78 @@ class TestSlack(unittest.TestCase):
         self.assertEqual(up.parse_slack({"status": "ok", "active_incidents": []}, PROV)["status"], "operational")
 
 
+class TestMicrosoft365(unittest.TestCase):
+    @staticmethod
+    def post(**kw):
+        return dict({"Id": None, "Title": "", "Message": "", "Status": "Operational",
+                     "AuthoredDateTime": "0001-01-01T00:00:00+00:00", "LastUpdatedTime": ISO}, **kw)
+
+    def consumer(self, *posts):
+        names = ["Outlook.com", "OneDrive", "Microsoft Teams (free)"]
+        return [self.post(ServiceDisplayName=n, ServiceWorkloadName=n.replace(" ", "")) for n in names[len(posts):]] + list(posts)
+
+    def test_ok(self):
+        docs = {"mac": self.post(Status="Available", Message="<div>This site is updated when service issues occur.</div>"),
+                "m365Consumer": self.consumer()}
+        r = up.parse_microsoft365(docs, PROV)
+        self.assertEqual((r["status"], r["total_components"], r["incidents"]), ("operational", 4, []))
+
+    def test_restored_counts_as_operational(self):
+        r = up.parse_microsoft365({"mac": self.post(Status="Service restored")}, PROV)
+        self.assertEqual(r["status"], "operational")
+
+    def test_broad_outage_from_the_admin_center(self):
+        mac = self.post(Id="MO1234567", Status="Service degradation", AuthoredDateTime=ISO,
+                        Message="<div>User impact: Users may be unable to access multiple Microsoft 365 services.&nbsp;<br></div>"
+                                "<div>More info: Exchange Online, Microsoft Teams</div>")
+        r = up.parse_microsoft365({"mac": mac, "m365Consumer": self.consumer()}, PROV)
+        self.assertEqual(r["status"], "major")
+        i = r["incidents"][0]
+        self.assertEqual((i["id"], i["title"], i["phase"]), ("MO1234567", "Users may be unable to access multiple Microsoft 365 services.", "Service degradation"))
+        self.assertEqual(r["components"], [{"name": "Microsoft 365 admin center", "status": "major"}])
+
+    def test_one_consumer_service(self):
+        outlook = self.post(ServiceDisplayName="Outlook.com", Status="Service degradation",
+                            Message="Some users may be unable to send email.")
+        r = up.parse_microsoft365({"mac": self.post(Status="Available"), "m365Consumer": self.consumer(outlook)}, PROV)
+        self.assertEqual(r["status"], "partial")
+        self.assertEqual(r["incidents"][0]["title"], "Outlook.com: service degradation")
+        slow = self.post(ServiceDisplayName="OneDrive", Status="Service degradation", Message="Sync may be slow.")
+        self.assertEqual(up.parse_microsoft365({"m365Consumer": [slow]}, PROV)["status"], "degraded")
+
+    def test_unknown_status_is_not_ignored(self):
+        r = up.parse_microsoft365({"m365Consumer": [self.post(ServiceDisplayName="Outlook.com", Status="Investigating")]}, PROV)
+        self.assertEqual(r["status"], "degraded")
+
+    def test_missing_dates(self):
+        mac = self.post(Status="Service degradation", LastUpdatedTime="0001-01-01T00:00:00+00:00")
+        i = up.parse_microsoft365({"mac": mac}, PROV)["incidents"][0]
+        self.assertEqual((i["started"], i["updated"]), (None, None))
+
+    def test_broken(self):
+        for docs in ({}, {"mac": {"x": 1}}, {"m365Consumer": {"Status": "Operational"}}, []):
+            with self.assertRaises(up.UnexpectedFormat):
+                up.parse_microsoft365(docs, PROV)
+
+    def test_download_falls_back_to_the_second_host(self):
+        calls = []
+
+        def fake(url):
+            calls.append(url)
+            if url.startswith(up.MS365_HOSTS[0]) and url.endswith("m365Consumer"):
+                raise up.urllib.error.HTTPError(url, 501, "Not Implemented", {}, None)
+            return b'[]' if url.endswith("m365Consumer") else b'{"Status": "Available"}'
+
+        with mock.patch.object(up, "download", side_effect=fake):
+            docs = up.download_ms365({})
+        self.assertEqual(docs, {"mac": {"Status": "Available"}, "m365Consumer": []})
+        self.assertTrue(calls[-1].startswith(up.MS365_HOSTS[1]))
+        with mock.patch.object(up, "download", side_effect=TimeoutError("slow")):
+            res, err = up.fetch({"type": "microsoft365", "web": "https://status.cloud.microsoft/"})
+        self.assertIsNone(res)
+        self.assertIn("ConnectionError", err)
+
+
 class TestPlaces(unittest.TestCase):
     CASES = {
         "Houston, United States - (IAH)": ["@IAH"],               # Cloudflare: the code wins over the country

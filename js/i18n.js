@@ -20,7 +20,7 @@ const LANGUAGES = {
     phases: {
       Investigating: "Investigando", Identified: "Identificado", Monitoring: "Vigilando", Resolved: "Resuelto",
       Postmortem: "Análisis posterior", Scheduled: "Programado", "In progress": "En curso", Verifying: "Verificando",
-      Completed: "Completado",
+      Completed: "Completado", "Service degradation": "Servicio degradado",
     },
 
     // terminal
