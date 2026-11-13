@@ -132,7 +132,7 @@ def terminal():
         t += pause
 
     command("uptime", 0.5)
-    output([(" 17:42:08 up 90 days,  27 services,  2 failing,  load average: 0.07, 0.04, 0.03", INK, 400)], 0.7)
+    output([(" 17:42:08 up 90 days,  28 services,  2 failing,  load average: 0.07, 0.04, 0.03", INK, 400)], 0.7)
     command("systemctl --failed", 1.1)
     output([("[FAILED]", RED, 700), (" Cloudflare and AWS are having problems.", INK, 700)], 0.3)
     output([("  ● ", RED, 400), ("cloudflare    ", INK, 400), ("major outage    ", RED, 400),

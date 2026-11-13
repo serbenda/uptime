@@ -25,6 +25,7 @@
 
     {"id": "google-workspace", "name": "Google Workspace", "category": "collab", "type": "google", "url": "https://www.google.com/appsstatus/dashboard/incidents.json", "web": "https://www.google.com/appsstatus/dashboard/"},
     {"id": "slack", "name": "Slack", "category": "collab", "type": "slack", "url": "https://slack-status.com/api/v2.0.0/current", "web": "https://slack-status.com"},
+    {"id": "microsoft-365", "name": "Microsoft 365", "category": "collab", "type": "microsoft365", "web": "https://status.cloud.microsoft/"},
     {"id": "zoom", "name": "Zoom", "category": "collab", "type": "statuspage", "url": "https://status.zoom.us", "web": "https://status.zoom.us"},
     {"id": "jira", "name": "Jira", "category": "collab", "type": "statuspage", "url": "https://jira-software.status.atlassian.com", "web": "https://jira-software.status.atlassian.com"},
     {"id": "confluence", "name": "Confluence", "category": "collab", "type": "statuspage", "url": "https://confluence.status.atlassian.com", "web": "https://confluence.status.atlassian.com"},

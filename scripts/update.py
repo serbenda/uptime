@@ -2,7 +2,7 @@
 """Reads the providers' official status pages, turns them into a common format and
 keeps the history. Python standard library only.
 
-Every provider publishes its status in its own way. This script understands seven formats:
+Every provider publishes its status in its own way. This script understands eight formats:
   statuspage    Atlassian Statuspage (/api/v2/summary.json): GitHub, Red Hat, Cloudflare…
   statusio      status.io (api.status.io): GitLab and Docker Hub
   google        incidents.json from Google Cloud and Google Workspace
@@ -10,6 +10,7 @@ Every provider publishes its status in its own way. This script understands seve
   azure-devops  Azure DevOps public health API
   aws           current public events from the AWS Health Dashboard
   slack         Slack's status API
+  microsoft365  the JSON behind Microsoft's public status page (status.cloud.microsoft)
 
 Reads from data/ (fixed files, on main):
   providers.json   which providers are queried and in which format
@@ -572,6 +573,99 @@ def parse_slack(data, prov):
     return r
 
 
+# ---------------------------------------------------------------- Microsoft 365 (status.cloud.microsoft)
+# The JSON documents Microsoft's public status page renders. No tenant, token or sign-in:
+#   api/posts/mac           one post: the Microsoft 365 admin center, where Microsoft announces
+#                           broad incidents ("Users may be unable to access multiple Microsoft 365 services")
+#   api/posts/m365Consumer  a list: one post per consumer service (Outlook.com, OneDrive, Teams…)
+# Each post has Status ("Available", "Operational", "Service degradation", "Service restored"),
+# Title (often empty), Message (HTML), AuthoredDateTime and LastUpdatedTime (0001-01-01 means none).
+# The same documents are also served by msit.status.cloud.microsoft, read when the main host fails.
+
+MS365_HOSTS = ("https://status.cloud.microsoft", "https://msit.status.cloud.microsoft")
+MS365_DOCUMENTS = {"mac": "Microsoft 365 admin center", "m365Consumer": None}
+MS365_HEALTHY = {"available", "operational", "service restored"}
+MS365_OUTAGE = re.compile(r"\b(unable|outage|unavailable|down|can't|cannot|failures?)\b", re.I)
+MS365_BROAD = re.compile(r"\b(multiple|all|most|several)\b", re.I)
+
+
+def download_ms365(prov):
+    """Both documents, each from whichever host answers. One missing is fine; both missing isn't."""
+    documents, errors = {}, []
+    for name in MS365_DOCUMENTS:
+        for host in MS365_HOSTS:
+            try:
+                documents[name] = parse_json(download(f"{host}/api/posts/{name}"))
+                break
+            except UnexpectedFormat as e:
+                errors.append(f"{name}: unexpected format: {e}")
+            except urllib.error.HTTPError as e:
+                errors.append(f"{name}: HTTP {e.code}")
+            except Exception as e:  # noqa: BLE001 - try the other host
+                errors.append(f"{name}: {type(e).__name__}")
+    if not documents:
+        raise ConnectionError("; ".join(errors)[:200])
+    return documents
+
+
+def ms365_date(value):
+    d = iso_date(value)
+    return d if d and d >= "2000" else None
+
+
+def ms365_impact(text, broad):
+    if not MS365_OUTAGE.search(text):
+        return "degraded"
+    return "major" if broad and MS365_BROAD.search(text) else "partial"
+
+
+def parse_microsoft365(documents, prov):
+    if not isinstance(documents, dict):
+        raise UnexpectedFormat("expected the mac and m365Consumer documents")
+    posts = []
+    mac = documents.get("mac")
+    if mac is not None:
+        if not isinstance(mac, dict) or not isinstance(mac.get("Status"), str):
+            raise UnexpectedFormat("mac without Status")
+        posts.append((MS365_DOCUMENTS["mac"], mac, True))
+    consumer = documents.get("m365Consumer")
+    if consumer is not None:
+        if not isinstance(consumer, list) or not all(isinstance(c, dict) and isinstance(c.get("Status"), str) for c in consumer):
+            raise UnexpectedFormat("m365Consumer is not a list of posts with Status")
+        posts += [(clean_text(c.get("ServiceDisplayName"), 80) or "Microsoft 365 consumer", c, False) for c in consumer]
+    if not posts:
+        raise UnexpectedFormat("no posts")
+
+    r = empty()
+    r["total_components"] = len(posts)
+    affected = []
+    for name, post, broad in posts:
+        status = clean_text(post["Status"], 40)
+        if status.lower() in MS365_HEALTHY:
+            continue
+        message = clean_text(post.get("Message"))
+        # Microsoft usually leaves the title empty and opens the message with "User impact: …"
+        headline = re.search(r"User impact:\s*(.{8,200}?\.)(\s|$)", message)
+        title = clean_text(post.get("Title"), 200) or (headline.group(1) if headline else f"{name}: {status.lower()}")
+        impact = ms365_impact(f"{title} {message}", broad)
+        affected.append({"name": name, "status": impact})
+        r["incidents"].append({
+            "id": str(post.get("Id") or post.get("ServiceWorkloadName") or name),
+            "title": title,
+            "impact": impact,
+            "phase": status,
+            "started": ms365_date(post.get("AuthoredDateTime")) or ms365_date(post.get("LastUpdatedTime")),
+            "updated": ms365_date(post.get("LastUpdatedTime")),
+            "message": message,
+            "link": prov.get("web"),
+            "affects": [name],
+        })
+    r["components"] = sorted(affected, key=lambda c: -RANK[c["status"]])[:MAX_COMPONENTS]
+    r["description"] = r["incidents"][0]["title"] if r["incidents"] else ""
+    r["status"] = final_status(r, "operational", affected)
+    return r
+
+
 # ---------------------------------------------------------------- fetching
 
 
@@ -581,6 +675,8 @@ def url_for(prov):
         return prov["url"].rstrip("/") + "/api/v2/summary.json"
     if kind == "statusio":
         return f"https://api.status.io/1.0/status/{prov['page']}"
+    if kind == "microsoft365":
+        return f"{MS365_HOSTS[0]}/api/posts/mac"
     return prov["url"]
 
 
@@ -592,13 +688,19 @@ PARSERS = {
     "azure-devops": (parse_azure_devops, True),
     "aws": (parse_aws, True),
     "slack": (parse_slack, True),
+    "microsoft365": (parse_microsoft365, True),
 }
+
+# Formats that need more than one request bring their own downloader, which returns the parsed data
+DOWNLOADERS = {"microsoft365": download_ms365}
 
 
 def fetch(prov):
     """Returns (result, error). Never raises: one provider being down doesn't break the rest."""
     parse, is_json = PARSERS[prov["type"]]
     try:
+        if prov["type"] in DOWNLOADERS:
+            return parse(DOWNLOADERS[prov["type"]](prov), prov), None
         raw = download(url_for(prov))
         return parse(parse_json(raw) if is_json else raw, prov), None
     except UnexpectedFormat as e:
